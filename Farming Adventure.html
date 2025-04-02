@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hanf Harvest: The Ultimate Psychedelic Adventure</title>
+  <style>
+    /* Allgemeine Stile */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #87CEEB; /* Himmelblau */
+      color: #333;
+      margin: 0;
+      padding: 0;
+      transition: all 0.5s ease;
+    }
+
+    header {
+      background-color: #4CAF50; /* Grüner Header */
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      transition: all 0.5s ease;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px;
+      transition: all 0.5s ease;
+    }
+
+    .farm-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 120px);
+      gap: 15px;
+      transition: all 0.5s ease;
+    }
+
+    .field {
+      width: 120px;
+      height: 120px;
+      background-color: #f4a460; /* Braune Farbe für leere Felder */
+      border: 2px solid #8b4513;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.5s ease;
+    }
+
+    .field.planted {
+      background-color: #90ee90; /* Grün für bepflanzte Felder */
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0%;
+      height: 10px;
+      background-color: #ffcc00; /* Gelb für den Fortschrittsbalken */
+      transition: width 5s linear;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      transition: all 0.5s ease;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+      transition: all 0.5s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .shop, .upgrades, .effects {
+      margin-top: 20px;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      text-align: center;
+      transition: all 0.5s ease;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      transition: all 0.5s ease;
+    }
+
+    /* Psychedelische Effekte */
+    .psychedelic {
+      animation: psychedelic-effect 5s infinite;
+    }
+
+    @keyframes psychedelic-effect {
+      0% { background-color: #ff6f61; transform: rotate(0deg); }
+      25% { background-color: #6bff61; transform: rotate(5deg); }
+      50% { background-color: #61c4ff; transform: rotate(-5deg); }
+      75% { background-color: #f7ff61; transform: rotate(5deg); }
+      100% { background-color: #ff6f61; transform: rotate(0deg); }
+    }
+
+    .blur-effect {
+      filter: blur(2px);
+    }
+
+    .rainbow-text {
+      background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .glow-effect {
+      text-shadow: 0 0 10px #ff0, 0 0 20px #ff0, 0 0 30px #ff0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="header-title">Hanf Harvest</h1>
+    <p>Deine ultimative psychedelische Farm wartet auf dich!</p>
+  </header>
+  
+  <main>
+    <div class="farm-grid">
+      <!-- Felder -->
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+      <div class="field" data-status="empty"></div>
+    </div>
+
+    <div class="controls">
+      <button id="plant-hemp">Hanf 🌿 kaufen (20 Coins)</button>
+      <button id="plant-magic-mushroom">Magic Mushroom 🍄 kaufen (50 Coins)</button>
+      <button id="plant-peyote">Peyote 🌵 kaufen (80 Coins)</button>
+      <button id="plant-lsd">LSD 💊 kaufen (150 Coins)</button>
+      <button id="plant-cannabis-oil">Cannabis Öl 🪴 kaufen (200 Coins)</button>
+      <button id="plant-dmt">DMT 🔮 kaufen (250 Coins)</button>
+      <button id="plant-opium">Opium 🌸 kaufen (300 Coins)</button>
+      <button id="plant-ecstasy">Ecstasy 💃 kaufen (350 Coins)</button>
+      <button id="plant-ketamine">Ketamin 🐈 kaufen (400 Coins)</button>
+      <button id="plant-cocaine">Kokain 💎 kaufen (500 Coins)</button>
+      <button id="harvest-all">Ernten 🚜</button>
+    </div>
+
+    <div class="shop">
+      <h2>Shop</h2>
+      <p><strong>Coins:</strong> <span id="coins">100</span></p>
+      <button id="buy-greenhouse">Gewächshaus 🏡 kaufen (200 Coins)</button>
+      <button id="buy-fertilizer">Dünger 🧪 kaufen (50 Coins)</button>
+      <button id="buy-water-system">Bewässerungssystem 💧 kaufen (300 Coins)</button>
+      <button id="buy-security-system">Sicherheitssystem 🛡️ kaufen (400 Coins)</button>
+    </div>
+
+    <div class="upgrades">
+      <h2>Upgrades</h2>
+      <p><strong>Fortschritt:</strong> <span id="upgrade-level">1</span>x</p>
+      <button id="buy-upgrade">Upgrade kaufen (500 Coins)</button>
+    </div>
+
+    <div class="effects">
+      <h2>Effekte</h2>
+      <p><strong>Aktive Effekte:</strong> <span id="active-effects">Keine</span></p>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2023 Hanf Harvest - Dein ultimatives psychedelisches Abenteuer</p>
+  </footer>
+
+  <script>
+    // Globale Variablen
+    let coins = 100;
+    let upgradeLevel = 1;
+    let activeEffects = [];
+
+    const fields = document.querySelectorAll(".field");
+    const coinsDisplay = document.getElementById("coins");
+    const upgradeLevelDisplay = document.getElementById("upgrade-level");
+    const activeEffectsDisplay = document.getElementById("active-effects");
+    const headerTitle = document.getElementById("header-title");
+
+    // Hanf pflanzen
+    document.getElementById("plant-hemp").addEventListener("click", () => plantCrop("🌿", 5000, 20, "Hanf"));
+    document.getElementById("plant-magic-mushroom").addEventListener("click", () => plantCrop("🍄", 10000, 50, "Magic Mushroom"));
+    document.getElementById("plant-peyote").addEventListener("click", () => plantCrop("🌵", 15000, 80, "Peyote"));
+    document.getElementById("plant-lsd").addEventListener("click", () => plantCrop("💊", 20000, 150, "LSD"));
+    document.getElementById("plant-cannabis-oil").addEventListener("click", () => plantCrop("🪴", 25000, 200, "Cannabis Öl"));
+    document.getElementById("plant-dmt").addEventListener("click", () => plantCrop("🔮", 30000, 250, "DMT"));
+    document.getElementById("plant-opium").addEventListener("click", () => plantCrop("🌸", 35000, 300, "Opium"));
+    document.getElementById("plant-ecstasy").addEventListener("click", () => plantCrop("💃", 40000, 350, "Ecstasy"));
+    document.getElementById("plant-ketamine").addEventListener("click", () => plantCrop("🐈", 45000, 400, "Ketamin"));
+    document.getElementById("plant-cocaine").addEventListener("click", () => plantCrop("💎", 50000, 500, "Kokain"));
+
+    // Ernten
+    document.getElementById("harvest-all").addEventListener("click", () => {
+      fields.forEach(field => {
+        if (field.dataset.status === "ready") {
+          const cropType = field.dataset.cropType;
+          field.dataset.status = "empty";
+          field.textContent = "";
+          field.classList.remove("planted");
+          field.querySelector(".progress-bar")?.remove();
+
+          // Belohnungen basierend auf der Pflanze
+          switch (cropType) {
+            case "Hanf":
+              coins += 50 * upgradeLevel;
+              break;
+            case "Magic Mushroom":
+              coins += 100 * upgradeLevel;
+              addEffect("Glücklich");
+              applyEffect("happy");
+              break;
+            case "Peyote":
+              coins += 200 * upgradeLevel;
+              addEffect("Halluzinationen");
+              applyEffect("hallucinate");
+              break;
+            case "LSD":
+              coins += 500 * upgradeLevel;
+              addEffect("Psychedelisch");
+              applyEffect("psychedelic");
+              break;
+            case "Cannabis Öl":
+              coins += 1000 * upgradeLevel;
+              addEffect("Entspannt");
+              applyEffect("relaxed");
+              break;
+            case "DMT":
+              coins += 1500 * upgradeLevel;
+              addEffect("Astralreise");
+              applyEffect("astral");
+              break;
+            case "Opium":
+              coins += 2000 * upgradeLevel;
+              addEffect("Trance");
+              applyEffect("trance");
+              break;
+            case "Ecstasy":
+              coins += 2500 * upgradeLevel;
+              addEffect("Euphorie");
+              applyEffect("euphoria");
+              break;
+            case "Ketamin":
+              coins += 3000 * upgradeLevel;
+              addEffect("Katzenvision");
+              applyEffect("cat-vision");
+              break;
+            case "Kokain":
+              coins += 5000 * upgradeLevel;
+              addEffect("Hyperaktiv");
+              applyEffect("hyperactive");
+              break;
+          }
+          updateCoins();
+        }
+      });
+    });
+
+    // Gewächshaus kaufen
+    document.getElementById("buy-greenhouse").addEventListener("click", () => {
+      if (coins >= 200) {
+        coins -= 200;
+        alert("Gewächshaus gekauft! Alle Wachstumszeiten werden um 20% reduziert.");
+        updateCoins();
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    });
+
+    // Dünger kaufen
+    document.getElementById("buy-fertilizer").addEventListener("click", () => {
+      if (coins >= 50) {
+        coins -= 50;
+        alert("Dünger gekauft! Erträge werden um 10% erhöht.");
+        updateCoins();
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    });
+
+    // Bewässerungssystem kaufen
+    document.getElementById("buy-water-system").addEventListener("click", () => {
+      if (coins >= 300) {
+        coins -= 300;
+        alert("Bewässerungssystem gekauft! Die Felder trocknen nicht mehr aus.");
+        updateCoins();
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    });
+
+    // Sicherheitssystem kaufen
+    document.getElementById("buy-security-system").addEventListener("click", () => {
+      if (coins >= 400) {
+        coins -= 400;
+        alert("Sicherheitssystem gekauft! Deine Farm ist jetzt sicher vor Dieben.");
+        updateCoins();
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    });
+
+    // Upgrade kaufen
+    document.getElementById("buy-upgrade").addEventListener("click", () => {
+      if (coins >= 500) {
+        upgradeLevel++;
+        coins -= 500;
+        updateCoins();
+        updateUpgradeLevel();
+        alert(`Upgrade-Level erhöht! Du verdienst jetzt ${upgradeLevel}x so viele Coins beim Ernten.`);
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    });
+
+    // Funktion zum Pflanzen einer Pflanze mit Wachstumszeit
+    function plantCrop(cropSymbol, growthTime, cost, cropType) {
+      if (coins >= cost) {
+        fields.forEach(field => {
+          if (field.dataset.status === "empty") {
+            field.dataset.status = "growing";
+            field.dataset.cropType = cropType;
+            field.classList.add("planted");
+
+            // Fortschrittsbalken erstellen
+            const progressBar = document.createElement("div");
+            progressBar.classList.add("progress-bar");
+            field.appendChild(progressBar);
+
+            // Animiere den Fortschrittsbalken
+            setTimeout(() => {
+              progressBar.style.width = "100%";
+            }, 0);
+
+            // Nach Ablauf der Wachstumszeit
+            setTimeout(() => {
+              field.dataset.status = "ready";
+              field.textContent = cropSymbol;
+              progressBar.remove(); // Entferne den Fortschrittsbalken
+            }, growthTime);
+
+            coins -= cost;
+            updateCoins();
+          }
+        });
+      } else {
+        alert("Nicht genug Coins!");
+      }
+    }
+
+    // Aktualisiere die Anzeige der Coins
+    function updateCoins() {
+      coinsDisplay.textContent = coins;
+    }
+
+    // Aktualisiere das Upgrade-Level
+    function updateUpgradeLevel() {
+      upgradeLevelDisplay.textContent = upgradeLevel;
+    }
+
+    // Füge Effekte hinzu
+    function addEffect(effectName) {
+      activeEffects.push(effectName);
+      activeEffectsDisplay.textContent = activeEffects.join(", ");
+    }
+
+    // Wende Effekte an
+    function applyEffect(effectName) {
+      const body = document.body;
+      const header = document.querySelector("header");
+      const main = document.querySelector("main");
+      const footer = document.querySelector("footer");
+
+      switch (effectName) {
+        case "happy":
+          body.style.backgroundColor = "#ffeb3b"; // Gelb
+          header.style.backgroundColor = "#ff9800"; // Orange
+          headerTitle.textContent = "Alles ist gut! 😊";
+          break;
+
+        case "hallucinate":
+          body.classList.add("blur-effect");
+          headerTitle.classList.add("rainbow-text");
+          headerTitle.textContent = "Was ist real? 🌀";
+          setTimeout(() => {
+            body.classList.remove("blur-effect");
+            headerTitle.classList.remove("rainbow-text");
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000); // Effekt dauert 10 Sekunden
+          break;
+
+        case "psychedelic":
+          body.classList.add("psychedelic");
+          headerTitle.textContent = "Farben explodieren! 🎨";
+          setTimeout(() => {
+            body.classList.remove("psychedelic");
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000); // Effekt dauert 10 Sekunden
+          break;
+
+        case "relaxed":
+          body.style.backgroundColor = "#a8c0ff"; // Blau
+          headerTitle.textContent = "So entspannend... 😌";
+          setTimeout(() => {
+            body.style.backgroundColor = "#87CEEB";
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+
+        case "astral":
+          headerTitle.classList.add("glow-effect");
+          headerTitle.textContent = "Du bist im Astralraum... ✨";
+          setTimeout(() => {
+            headerTitle.classList.remove("glow-effect");
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+
+        case "trance":
+          body.style.animation = "pulse 2s infinite";
+          headerTitle.textContent = "In Trance... 🌀";
+          setTimeout(() => {
+            body.style.animation = "none";
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+
+        case "euphoria":
+          header.style.color = "#ff00ff";
+          headerTitle.textContent = "Euphorie pur! 🎉";
+          setTimeout(() => {
+            header.style.color = "white";
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+
+        case "cat-vision":
+          body.style.filter = "grayscale(100%)";
+          headerTitle.textContent = "Alles ist grau... 🐱";
+          setTimeout(() => {
+            body.style.filter = "none";
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+
+        case "hyperactive":
+          body.style.animation = "shake 0.5s infinite";
+          headerTitle.textContent = "Zu viel Energie! ⚡";
+          setTimeout(() => {
+            body.style.animation = "none";
+            headerTitle.textContent = "Hanf Harvest";
+          }, 10000);
+          break;
+      }
+    }
+  </script>
+</body>
+</html>

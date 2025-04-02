@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farming Spiel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 5px;
+        }
+
+        .block {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .wood {
+            background-color: brown;
+        }
+
+        .stone {
+            background-color: gray;
+        }
+
+        .coal {
+            background-color: black;
+        }
+
+        .iron {
+            background-color: silver;
+        }
+
+        .diamond {
+            background-color: lightblue;
+        }
+
+        .block:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .inventory {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .item {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .shop {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .shop-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .tool {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .axe {
+            background-color: darkgreen;
+        }
+
+        .pickaxe {
+            background-color: darkblue;
+        }
+
+        .shovel {
+            background-color: darkorange;
+        }
+
+        .tool:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<h1>Dein Farming Spiel</h1>
+
+<div class="game-area" id="gameArea"></div>
+
+<div class="inventory">
+    <div class="item">
+        <p><strong>Holz:</strong> <span id="wood">0</span></p>
+    </div>
+    <div class="item">
+        <p><strong>Stein:</strong> <span id="stone">0</span></p>
+    </div>
+    <div class="item">
+        <p><strong>Kohle:</strong> <span id="coal">0</span></p>
+    </div>
+    <div class="item">
+        <p><strong>Eisen:</strong> <span id="iron">0</span></p>
+    </div>
+    <div class="item">
+        <p><strong>Diamant:</strong> <span id="diamond">0</span></p>
+    </div>
+    <div class="item">
+        <p><strong>Geld:</strong> <span id="money">0</span> €</p>
+    </div>
+</div>
+
+<div class="controls">
+    <button onclick="sellResources()">Ressourcen verkaufen</button>
+</div>
+
+<h2>Werkzeuge</h2>
+<div class="tools">
+    <div class="tool axe" onclick="selectTool('axe')">Axt</div>
+    <div class="tool pickaxe" onclick="selectTool('pickaxe')">Pickaxe</div>
+    <div class="tool shovel" onclick="selectTool('shovel')">Shovel</div>
+</div>
+
+<h2>Shop</h2>
+<div class="shop">
+    <div class="shop-item">
+        <p>Axt (+2 Holz pro Klick)</p>
+        <button onclick="buyItem('axe')">Kaufen (10€)</button>
+    </div>
+    <div class="shop-item">
+        <p>Pickaxe (+2 Stein pro Klick)</p>
+        <button onclick="buyItem('pickaxe')">Kaufen (15€)</button>
+    </div>
+    <div class="shop-item">
+        <p>Shovel (+2 Kohle pro Klick)</p>
+        <button onclick="buyItem('shovel')">Kaufen (12€)</button>
+    </div>
+    <div class="shop-item">
+        <p>Iron Pickaxe (Eisen abbauen)</p>
+        <button onclick="buyItem('iron_pickaxe')">Kaufen (30€)</button>
+    </div>
+    <div class="shop-item">
+        <p>Diamond Pickaxe (Diamant abbauen)</p>
+        <button onclick="buyItem('diamond_pickaxe')">Kaufen (50€)</button>
+    </div>
+</div>
+
+<script>
+    // Inventar
+    let inventory = {
+        wood: 0,
+        stone: 0,
+        coal: 0,
+        iron: 0,
+        diamond: 0,
+        money: 0,
+        axeLevel: 1,
+        pickaxeLevel: 1,
+        shovelLevel: 1,
+        ironPickaxe: false,
+        diamondPickaxe: false,
+        selectedTool: "axe"
+    };
+
+    // Funktion zum Generieren der Spielwelt
+    function generateWorld() {
+        const gameArea = document.getElementById("gameArea");
+        gameArea.innerHTML = ""; // Alte Blöcke löschen
+
+        const resources = ["wood", "stone", "coal", "iron", "diamond"];
+        for (let i = 0; i < 25; i++) {
+            const resource = resources[Math.floor(Math.random() * resources.length)];
+            const block = document.createElement("div");
+            block.classList.add("block", resource);
+            block.onclick = () => collectResource(resource);
+            gameArea.appendChild(block);
+        }
+    }
+
+    // Funktion zum Sammeln von Ressourcen
+    function collectResource(resource) {
+        const multipliers = {
+            wood: inventory.selectedTool === "axe" ? inventory.axeLevel : 0,
+            stone: inventory.selectedTool === "pickaxe" ? inventory.pickaxeLevel : 0,
+            coal: inventory.selectedTool === "shovel" ? inventory.shovelLevel : 0,
+            iron: inventory.ironPickaxe && inventory.selectedTool === "pickaxe" ? 1 : 0,
+            diamond: inventory.diamondPickaxe && inventory.selectedTool === "pickaxe" ? 1 : 0
+        };
+
+        if (multipliers[resource] > 0) {
+            inventory[resource] += multipliers[resource];
+            updateDisplay();
+            generateWorld(); // Neue Welt generieren nach jedem Klick
+        } else {
+            alert(`Du benötigst ein besseres Werkzeug, um ${resource} abzubauen!`);
+        }
+    }
+
+    // Funktion zum Verkaufen von Ressourcen
+    function sellResources() {
+        const prices = { wood: 1, stone: 2, coal: 3, iron: 5, diamond: 10 };
+        inventory.money +=
+            inventory.wood * prices.wood +
+            inventory.stone * prices.stone +
+            inventory.coal * prices.coal +
+            inventory.iron * prices.iron +
+            inventory.diamond * prices.diamond;
+
+        inventory.wood = 0;
+        inventory.stone = 0;
+        inventory.coal = 0;
+        inventory.iron = 0;
+        inventory.diamond = 0;
+
+        updateDisplay();
+    }
+
+    // Funktion zum Kauf von Gegenständen
+    function buyItem(item) {
+        const prices = {
+            axe: 10,
+            pickaxe: 15,
+            shovel: 12,
+            iron_pickaxe: 30,
+            diamond_pickaxe: 50
+        };
+
+        if (inventory.money >= prices[item]) {
+            inventory.money -= prices[item];
+
+            if (item === "axe") inventory.axeLevel += 1;
+            else if (item === "pickaxe") inventory.pickaxeLevel += 1;
+            else if (item === "shovel") inventory.shovelLevel += 1;
+            else if (item === "iron_pickaxe") inventory.ironPickaxe = true;
+            else if (item === "diamond_pickaxe") inventory.diamondPickaxe = true;
+
+            alert(`Du hast einen ${item} gekauft!`);
+        } else {
+            alert("Nicht genug Geld!");
+        }
+
+        updateDisplay();
+    }
+
+    // Funktion zum Auswählen eines Werkzeugs
+    function selectTool(tool) {
+        inventory.selectedTool = tool;
+        alert(`Du hast das ${tool} ausgewählt!`);
+    }
+
+    // Funktion zum Aktualisieren der Anzeige
+    function updateDisplay() {
+        document.getElementById("wood").textContent = inventory.wood;
+        document.getElementById("stone").textContent = inventory.stone;
+        document.getElementById("coal").textContent = inventory.coal;
+        document.getElementById("iron").textContent = inventory.iron;
+        document.getElementById("diamond").textContent = inventory.diamond;
+        document.getElementById("money").textContent = inventory.money;
+    }
+
+    // Initialisierung
+    generateWorld();
+    updateDisplay();
+</script>
+
+</body>
+</html>

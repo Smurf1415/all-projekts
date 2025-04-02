@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistischer Bottle Flip</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #4c1d95, #301934);
+            color: white;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(255, 0, 255, 0.7);
+        }
+
+        .container {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+
+        .bottle {
+            width: 80px;
+            height: 200px;
+            background: linear-gradient(to bottom, #ffffff, #e0f7fa); /* Glas-Effekt */
+            border-radius: 10px;
+            position: relative;
+            transition: transform 1s ease-out;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .cap {
+            width: 100%;
+            height: 20px;
+            background: #2196f3; /* Deckel */
+            border-radius: 10px 10px 0 0;
+        }
+
+        .base {
+            width: 100%;
+            height: 20px;
+            background: #2196f3; /* Boden */
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* Animation für den Bottle-Flip */
+        @keyframes bottle-flip {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+            50% {
+                transform: rotateX(-180deg) rotateY(360deg);
+            }
+            100% {
+                transform: rotateX(-360deg) rotateY(720deg);
+            }
+        }
+
+        /* Erfolgreicher Landeanimation */
+        @keyframes land-success {
+            0% {
+                transform: rotateX(-360deg) rotateY(720deg);
+            }
+            100% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+        }
+
+        /* Misserfolgsanimation */
+        @keyframes land-fail {
+            0% {
+                transform: rotateX(-360deg) rotateY(720deg);
+            }
+            100% {
+                transform: rotateX(90deg) rotateY(720deg);
+            }
+        }
+
+        .result {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        .result.success {
+            color: #32cd32; /*Grün*/
+        }
+
+        .result.fail {
+            color: #ff4500; /*Orange-Rot*/
+        }
+    </style>
+</head>
+<body>
+
+<h1>Realistischer Bottle Flip</h1>
+
+<div class="container">
+    <div class="bottle" id="bottle">
+        <div class="cap"></div>
+        <div class="base"></div>
+    </div>
+</div>
+
+<div class="result" id="result"></div>
+
+<script>
+    const bottle = document.getElementById("bottle");
+    const resultElement = document.getElementById("result");
+
+    // Funktion zum Durchführen des Bottle-Flips
+    function performBottleFlip() {
+        const successChance = Math.random(); // Zufallszahl zwischen 0 und 1
+        let isSuccessful = false;
+
+        // Animation starten
+        bottle.style.animation = "bottle-flip 1s ease-out";
+
+        setTimeout(() => {
+            if (successChance < 0.3) { // 30% Chance auf Erfolg
+                bottle.style.animation = "land-success 0.5s ease-out";
+                resultElement.textContent = "Erfolg! Du hast es geschafft!";
+                resultElement.className = "result success";
+                isSuccessful = true;
+            } else {
+                bottle.style.animation = "land-fail 0.5s ease-out";
+                resultElement.textContent = "Misserfolg! Versuche es erneut!";
+                resultElement.className = "result fail";
+            }
+
+            // Nach der Animation zurückschalten
+            setTimeout(() => {
+                bottle.style.animation = "";
+                resultElement.textContent = "";
+                resultElement.className = "";
+            }, 1000);
+        }, 1000); // Warte auf Ende der ersten Animation
+    }
+
+    // Event Listener für Klicks auf die Flasche
+    bottle.addEventListener("click", performBottleFlip);
+</script>
+
+</body>
+</html>

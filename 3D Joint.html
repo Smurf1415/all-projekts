@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Joint mit Dreh-Slider</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: white;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+    }
+    .slider-container {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+    }
+    input[type="range"] {
+      width: 80%;
+      margin: 10px auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>3D Joint mit Dreh-Slider</h1>
+  <div class="slider-container">
+    <label for="rotation">Drehen:</label>
+    <input type="range" id="rotation" min="0" max="360" value="0">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+  <script>
+    // Scene, Camera, Renderer setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Create a 3D joint (cylinder shape)
+    const jointGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 32); // Zylinder für den Joint
+    const jointMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 }); // Braune Farbe
+    const joint = new THREE.Mesh(jointGeometry, jointMaterial);
+    scene.add(joint);
+
+    // Add lighting
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 5, 5);
+    scene.add(light);
+
+    // Position the camera
+    camera.position.z = 2;
+
+    // Rotation slider
+    const rotationSlider = document.getElementById('rotation');
+    rotationSlider.addEventListener('input', (event) => {
+      const angle = parseFloat(event.target.value);
+      joint.rotation.y = THREE.MathUtils.degToRad(angle); // Convert degrees to radians
+    });
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aimbot-Spiel mit 164 Funktionen</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background: linear-gradient(to bottom, #000000, #1a1a1a);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+    .slider-container {
+      margin-top: 20px;
+    }
+    .info-panel {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .info-panel span {
+      font-weight: bold;
+      color: #00ff00;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      cursor: pointer;
+      background-color: #00ff00;
+      border: none;
+      color: #000;
+      border-radius: 5px;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Aimbot-Spiel mit 164 Funktionen</h1>
+  <p>Bewege die Maus und vernichte die Ziele!</p>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <!-- Schieberegler für FOV -->
+  <div class="slider-container">
+    <label for="fovSlider">FOV-Radius:</label>
+    <input type="range" id="fovSlider" min="20" max="300" value="150">
+    <span id="fovValue">150</span>
+  </div>
+
+  <!-- Schieberegler für Aimbot-Geschwindigkeit -->
+  <div class="slider-container">
+    <label for="speedSlider">Aimbot-Geschwindigkeit:</label>
+    <input type="range" id="speedSlider" min="0.01" max="0.5" step="0.01" value="0.1">
+    <span id="speedValue">0.1</span>
+  </div>
+
+  <!-- Aimbot ein/aus -->
+  <div class="slider-container">
+    <label for="aimbotToggle">Aimbot aktivieren:</label>
+    <input type="checkbox" id="aimbotToggle" checked>
+  </div>
+
+  <!-- Info-Panel -->
+  <div class="info-panel">
+    <p>Punkte: <span id="scoreValue">0</span></p>
+    <p>Ziele übrig: <span id="targetsLeft">25</span></p>
+    <p>Munition: <span id="ammoValue">∞</span></p>
+    <p>Zeit: <span id="timeValue">60</span> Sekunden</p>
+  </div>
+
+  <!-- Neustart-Button -->
+  <button id="restartButton">Simulation neustarten</button>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Spielvariablen
+    let fovRadius = 150; // Startwert des FOV-Radius
+    let aimbotActive = true;
+    let aimbotSpeed = 0.1;
+    let weaponPosition = { x: canvas.width / 2, y: canvas.height / 2 };
+    let score = 0;
+    let ammo = 100; // Begrenzte Munition
+    let timeLeft = 60;
+
+    // Ziel-Array (25 Ziele)
+    const targets = Array.from({ length: 25 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 20 + 10,
+      health: 100,
+      active: true,
+    }));
+
+    // Soundeffekte
+    const shootSound = new Audio('https://www.soundjay.com/button/beep-07.wav');
+    const explosionSound = new Audio('https://www.soundjay.com/misc/sounds/explosion-01.mp3');
+
+    // Interpolation für flüssige Bewegungen
+    function interpolate(current, target, speed) {
+      return current + (target - current) * speed;
+    }
+
+    // Simulierte Aimbot-Logik
+    function simulateAimbot(mouseX, mouseY) {
+      let closestTarget = null;
+      let closestDistance = Infinity;
+
+      for (const target of targets) {
+        if (!target.active) continue;
+
+        const distance = Math.sqrt(
+          Math.pow(target.x - mouseX, 2) +
+          Math.pow(target.y - mouseY, 2)
+        );
+
+        if (distance <= fovRadius && distance < closestDistance) {
+          closestTarget = target;
+          closestDistance = distance;
+        }
+      }
+
+      if (closestTarget) {
+        const deltaX = closestTarget.x - mouseX;
+        const deltaY = closestTarget.y - mouseY;
+        const speedFactor = Math.min(1, closestDistance / 100);
+        const adjustedSpeed = aimbotSpeed * speedFactor;
+
+        const newX = interpolate(mouseX, closestTarget.x, adjustedSpeed);
+        const newY = interpolate(mouseY, closestTarget.y, adjustedSpeed);
+
+        return { x: newX, y: newY };
+      }
+
+      return { x: mouseX, y: mouseY };
+    }
+
+    // Schussmechanik
+    function shootAtTarget(target) {
+      if (!target.active || ammo === 0) return;
+
+      shootSound.play();
+      ammo--;
+      updateAmmo();
+
+      target.health -= 50; // Reduziere Lebenspunkte
+      if (target.health <= 0) {
+        explosionSound.play();
+        target.active = false;
+        createExplosion(target.x, target.y);
+        score += 10;
+        updateScore();
+        updateTargetsLeft();
+      }
+    }
+
+    // Explosionsanimation
+    function createExplosion(x, y) {
+      const explosion = { x, y, radius: 5, maxRadius: 30, opacity: 1 };
+      const explosions = [explosion];
+
+      function animateExplosion() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = explosions.length - 1; i >= 0; i--) {
+          const exp = explosions[i];
+          exp.radius += 2;
+          exp.opacity -= 0.05;
+
+          if (exp.opacity <= 0) {
+            explosions.splice(i, 1);
+            continue;
+          }
+
+          ctx.beginPath();
+          ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 0, 0, ${exp.opacity})`;
+          ctx.fill();
+        }
+
+        if (explosions.length > 0) {
+          requestAnimationFrame(animateExplosion);
+        }
+      }
+
+      animateExplosion();
+    }
+
+    // Zeichnen
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Ziele zeichnen
+      for (const target of targets) {
+        if (!target.active) continue;
+
+        ctx.fillStyle = 'red';
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, target.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // FOV-Kreis um die Maus zeichnen
+      ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(weaponPosition.x, weaponPosition.y, fovRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Aimbot-Logik
+      if (aimbotActive) {
+        const newWeaponPosition = simulateAimbot(weaponPosition.x, weaponPosition.y);
+        weaponPosition.x = newWeaponPosition.x;
+        weaponPosition.y = newWeaponPosition.y;
+
+        // Überprüfe, ob ein Ziel getroffen wurde
+        for (const target of targets) {
+          if (!target.active) continue;
+
+          const distanceToTarget = Math.sqrt(
+            Math.pow(target.x - weaponPosition.x, 2) +
+            Math.pow(target.y - weaponPosition.y, 2)
+          );
+
+          if (distanceToTarget <= 10) { // Trefferbereich
+            shootAtTarget(target);
+          }
+        }
+      }
+
+      // Waffenposition zeichnen
+      ctx.fillStyle = 'blue';
+      ctx.beginPath();
+      ctx.arc(weaponPosition.x, weaponPosition.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      requestAnimationFrame(draw);
+    }
+
+    // Mausbewegungen erfassen
+    canvas.addEventListener('mousemove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      weaponPosition.x = event.clientX - rect.left;
+      weaponPosition.y = event.clientY - rect.top;
+    });
+
+    // Neustart-Button
+    const restartButton = document.getElementById('restartButton');
+    const scoreElement = document.getElementById('scoreValue');
+    const targetsLeftElement = document.getElementById('targetsLeft');
+    const ammoElement = document.getElementById('ammoValue');
+    const timeElement = document.getElementById('timeValue');
+
+    restartButton.addEventListener('click', () => {
+      targets.forEach(target => {
+        target.x = Math.random() * canvas.width;
+        target.y = Math.random() * canvas.height;
+        target.health = 100;
+        target.active = true;
+      });
+      score = 0;
+      ammo = 100;
+      timeLeft = 60;
+      updateScore();
+      updateAmmo();
+      updateTime();
+      updateTargetsLeft();
+    });
+
+    // Aktualisiere die Anzeige
+    function updateScore() {
+      scoreElement.textContent = score;
+    }
+
+    function updateAmmo() {
+      ammoElement.textContent = ammo === Infinity ? '∞' : ammo;
+    }
+
+    function updateTargetsLeft() {
+      const activeTargets = targets.filter(target => target.active).length;
+      targetsLeftElement.textContent = activeTargets;
+    }
+
+    function updateTime() {
+      timeElement.textContent = timeLeft;
+    }
+
+    // Timer für die Runde
+    setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateTime();
+      } else {
+        alert(`Runde beendet! Deine Punktzahl: ${score}`);
+        restartButton.click();
+      }
+    }, 1000);
+
+    updateScore();
+    updateAmmo();
+    updateTime();
+    updateTargetsLeft();
+    draw();
+  </script>
+</body>
+</html>

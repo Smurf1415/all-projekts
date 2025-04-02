@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÜBER-CASINO - CookieCoin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #4c1d95, #301934);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(255, 0, 255, 0.7);
+        }
+
+        .container {
+            background: linear-gradient(to bottom, #6a0dad, #301934);
+            border: 2px solid #8a2be2;
+            border-radius: 20px;
+            padding: 30px 50px;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .balance {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #8a2be2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
+        }
+
+        .result {
+            font-size: 28px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result.success {
+            color: #32cd32; /*Grün*/
+        }
+
+        .result.fail {
+            color: #ff4500; /*Orange-Rot*/
+        }
+
+        .jackpot {
+            font-size: 48px;
+            margin-top: 20px;
+            text-shadow: 2px 2px 20px rgba(255, 255, 0, 0.7);
+        }
+
+        .game-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .bet-input {
+            padding: 10px;
+            font-size: 18px;
+            margin-right: 10px;
+        }
+
+        /* Slot-Maschine */
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .slot {
+            font-size: 48px;
+            animation: slot-spin 1s ease-out;
+        }
+
+        @keyframes slot-spin {
+            from {
+                transform: translateY(-100px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* Würfel */
+        .dice {
+            font-size: 48px;
+            animation: spin 1s ease-out;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        /* Roulettetisch */
+        .roulette {
+            font-size: 48px;
+            animation: roulette-spin 2s ease-out;
+        }
+
+        @keyframes roulette-spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>ÜBER-CASINO - CookieCoin</h1>
+
+<div class="container">
+    <div class="balance">Dein Guthaben: <span id="balance">500</span> CookieCoins</div>
+    <button onclick="giveCookies()">Gib mir 100 CookieCoins</button>
+
+    <!-- Glücksrad -->
+    <div class="game-container">
+        <h2>Glücksrad</h2>
+        <input type="number" class="bet-input" id="wheel-bet" placeholder="Wetteingabe">
+        <button onclick="spinWheel()">Drehen</button>
+        <div class="result" id="wheel-result"></div>
+    </div>
+
+    <!-- Slots -->
+    <div class="game-container">
+        <h2>Slots</h2>
+        <input type="number" class="bet-input" id="slots-bet" placeholder="Wetteingabe">
+        <button onclick="playSlots()">Spin</button>
+        <div class="slot-machine" id="slot-machine"></div>
+        <div class="result" id="slots-result"></div>
+    </div>
+
+    <!-- Würfeln -->
+    <div class="game-container">
+        <h2>Würfeln</h2>
+        <input type="number" class="bet-input" id="dice-bet" placeholder="Wetteingabe">
+        <button onclick="rollDice()">Würfeln</button>
+        <div class="dice" id="dice"></div>
+        <div class="result" id="dice-result"></div>
+    </div>
+
+    <!-- Roulette -->
+    <div class="game-container">
+        <h2>Roulette</h2>
+        <input type="number" class="bet-input" id="roulette-bet" placeholder="Wetteingabe">
+        <button onclick="playRoulette()">Drehen</button>
+        <div class="roulette" id="roulette"></div>
+        <div class="result" id="roulette-result"></div>
+    </div>
+
+    <!-- Blackjack -->
+    <div class="game-container">
+        <h2>Blackjack</h2>
+        <input type="number" class="bet-input" id="blackjack-bet" placeholder="Wetteingabe">
+        <button onclick="playBlackjack()">Spielen</button>
+        <div class="result" id="blackjack-result"></div>
+    </div>
+
+    <!-- Memory -->
+    <div class="game-container">
+        <h2>Memory</h2>
+        <input type="number" class="bet-input" id="memory-bet" placeholder="Wetteingabe">
+        <button onclick="playMemory()">Spielen</button>
+        <div class="result" id="memory-result"></div>
+    </div>
+</div>
+
+<script>
+    // Startguthaben
+    let balance = 500;
+
+    // Funktion zum Aktualisieren des Guthabens
+    function updateBalance() {
+        document.getElementById("balance").textContent = balance;
+    }
+
+    // Glücksrad
+    function spinWheel() {
+        const bet = parseInt(document.getElementById("wheel-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const result = Math.random();
+        let message = "";
+        let isJackpot = false;
+
+        if (result < 0.01) {
+            message = "JACKPOT! +500 Coins";
+            balance += 500;
+            isJackpot = true;
+        } else if (result < 0.3) {
+            message = "Gewonnen! +" + (bet * 2) + " Coins";
+            balance += bet * 2;
+        } else {
+            message = "Verloren.";
+        }
+
+        document.getElementById("wheel-result").textContent = message;
+        updateBalance();
+    }
+
+    // Slots
+    function playSlots() {
+        const bet = parseInt(document.getElementById("slots-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const symbols = ["🍒", "🍋", "🍇", "🍉", "⭐"];
+        const slot1 = symbols[Math.floor(Math.random() * symbols.length)];
+        const slot2 = symbols[Math.floor(Math.random() * symbols.length)];
+        const slot3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+        const slotMachine = document.getElementById("slot-machine");
+        slotMachine.innerHTML = `
+            <span class="slot">${slot1}</span>
+            <span class="slot">${slot2}</span>
+            <span class="slot">${slot3}</span>
+        `;
+
+        let message = `Du hast ${slot1} | ${slot2} | ${slot3} gedreht.`;
+
+        if (slot1 === slot2 && slot2 === slot3) {
+            message += " JACKPOT! +" + (bet * 5) + " Coins";
+            balance += bet * 5;
+        } else {
+            message += " Verloren.";
+        }
+
+        document.getElementById("slots-result").textContent = message;
+        updateBalance();
+    }
+
+    // Würfeln
+    function rollDice() {
+        const bet = parseInt(document.getElementById("dice-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const diceValue = Math.floor(Math.random() * 6) + 1;
+        const dice = document.getElementById("dice");
+        dice.textContent = diceValue;
+
+        let message = `Du hast eine ${diceValue} gewürfelt.`;
+
+        if (diceValue === 6) {
+            message += " JACKPOT! +" + (bet * 10) + " Coins";
+            balance += bet * 10;
+        } else if (diceValue > 3) {
+            message += " Gewonnen! +" + (bet * 2) + " Coins";
+            balance += bet * 2;
+        } else {
+            message += " Verloren.";
+        }
+
+        document.getElementById("dice-result").textContent = message;
+        updateBalance();
+    }
+
+    // Roulette
+    function playRoulette() {
+        const bet = parseInt(document.getElementById("roulette-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const result = Math.floor(Math.random() * 37);
+        const roulette = document.getElementById("roulette");
+        roulette.textContent = result;
+
+        let message = `Die Kugel landet auf ${result}.`;
+
+        if (result === 0) {
+            message += " JACKPOT! +" + (bet * 35) + " Coins";
+            balance += bet * 35;
+        } else if (result % 2 === 0) {
+            message += " Gewonnen! +" + (bet * 2) + " Coins";
+            balance += bet * 2;
+        } else {
+            message += " Verloren.";
+        }
+
+        document.getElementById("roulette-result").textContent = message;
+        updateBalance();
+    }
+
+    // Blackjack
+    function playBlackjack() {
+        const bet = parseInt(document.getElementById("blackjack-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const playerCard1 = Math.floor(Math.random() * 10) + 1;
+        const playerCard2 = Math.floor(Math.random() * 10) + 1;
+        const dealerCard1 = Math.floor(Math.random() * 10) + 1;
+        const dealerCard2 = Math.floor(Math.random() * 10) + 1;
+
+        const playerScore = playerCard1 + playerCard2;
+        const dealerScore = dealerCard1 + dealerCard2;
+
+        let message = `Du hast ${playerScore}, Dealer hat ${dealerScore}.`;
+
+        if (playerScore > dealerScore && playerScore <= 21) {
+            message += " Gewonnen! +" + (bet * 2) + " Coins";
+            balance += bet * 2;
+        } else {
+            message += " Verloren.";
+        }
+
+        document.getElementById("blackjack-result").textContent = message;
+        updateBalance();
+    }
+
+    // Memory
+    function playMemory() {
+        const bet = parseInt(document.getElementById("memory-bet").value) || 0;
+        if (balance < bet) return alert("Nicht genug Coins!");
+        balance -= bet;
+        updateBalance();
+
+        const pairs = ["🌟", "🌟", "💎", "💎", "✨", "✨", "🎉", "🎉"];
+        const shuffled = shuffleArray(pairs.slice());
+        let matches = 0;
+
+        for (let i = 0; i < shuffled.length; i++) {
+            if (shuffled[i] === shuffled[i + 1]) matches++;
+        }
+
+        let message = `Du hast ${matches} Paare gefunden.`;
+
+        if (matches >= 3) {
+            message += " Gewonnen! +" + (bet * 3) + " Coins";
+            balance += bet * 3;
+        } else {
+            message += " Verloren.";
+        }
+
+        document.getElementById("memory-result").textContent = message;
+        updateBalance();
+    }
+
+    // Hilfsfunktionen
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function giveCookies() {
+        balance += 100;
+        updateBalance();
+        alert("Du hast 100 CookieCoins erhalten!");
+    }
+
+    // Initialisierung
+    updateBalance();
+</script>
+
+</body>
+</html>

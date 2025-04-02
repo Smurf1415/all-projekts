@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blackjack Trainer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Allgemeine Stile */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+            color: white;
+            background-color: #225338;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Startbildschirm */
+        #start-screen {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Canvas-Stil */
+        canvas {
+            display: none;
+        }
+
+        /* Kartenanzeige */
+        #dealer-cards img, #player-cards img {
+            height: 280px;
+            width: 200px;
+            margin: 1px;
+        }
+
+        /* Buttons */
+        button {
+            width: 100px;
+            height: 50px;
+            font-size: 20px;
+            margin: 5px;
+        }
+
+        /* Ergebnisanzeige */
+        #results {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Startbildschirm -->
+    <div id="start-screen" class="screen" style="display:block">
+        <h1>Welcome to the Blackjack Trainer!</h1>
+        <button onclick="game.start()">Play</button>
+    </div>
+
+    <!-- Canvas für den Gameloop -->
+    <canvas id="canvas" style="display:none"></canvas>
+
+    <!-- Dealer-Anzeige -->
+    <h2>Dealer: <span id="dealer-sum"></span></h2>
+    <div id="dealer-cards">
+        <img id="hidden" src="./Card images/card_back.png" alt="Hidden Card">
+    </div>
+
+    <!-- Spieler-Anzeige -->
+    <h2>You: <span id="player-sum"></span></h2>
+    <div id="player-cards"></div>
+
+    <!-- Aktionen -->
+    <br>
+    <button id="hit" onclick="handleHit()">Hit</button>
+    <button id="stand" onclick="handleStand()">Stand</button>
+    <button id="double" onclick="handleDouble()">Double</button>
+    <button id="surr" onclick="handleSurrender()">Surrender</button>
+    <p id="results"></p>
+
+    <script>
+        // GameLoop-Klasse
+        class GameLoop {
+            constructor() {
+                this.fps = 60;
+                this.ctx = null;
+                this.cnv = null;
+                this.loop = null;
+            }
+
+            prepareCanvas() {
+                this.cnv = document.getElementById('canvas');
+                this.ctx = this.cnv.getContext('2d');
+                document.body.style.margin = 0;
+                document.body.style.padding = 0;
+                this.onresize();
+            }
+
+            onresize() {
+                if (this.cnv) {
+                    this.cnv.width = window.innerWidth;
+                    this.cnv.height = window.innerHeight;
+                    this.resize();
+                }
+            }
+
+            start() {
+                this.toggleScreen('start-screen', false);
+                this.toggleScreen('canvas', true);
+                this.prepareCanvas();
+                this.init();
+                this.loop = setInterval(() => {
+                    this.update();
+                    this.render();
+                }, 1000 / this.fps);
+            }
+
+            toggleScreen(id, toggle) {
+                let element = document.getElementById(id);
+                let display = toggle ? 'block' : 'none';
+                element.style.display = display;
+            }
+
+            init() {
+                // Initialisierung des Spiels
+                console.log("Game initialized!");
+            }
+
+            update() {
+                // Spiellogik aktualisieren
+            }
+
+            render() {
+                // Canvas rendern
+                if (this.ctx) {
+                    this.ctx.clearRect(0, 0, this.cnv.width, this.cnv.height);
+                }
+            }
+
+            resize() {
+                // Canvas-Größe anpassen
+            }
+        }
+
+        // Globale GameLoop-Instanz
+        const game = new GameLoop();
+
+        // Handler-Funktionen für Aktionen
+        function handleHit() {
+            console.log("Hit clicked!");
+            // Logik für Hit implementieren
+        }
+
+        function handleStand() {
+            console.log("Stand clicked!");
+            // Logik für Stand implementieren
+        }
+
+        function handleDouble() {
+            console.log("Double clicked!");
+            // Logik für Double implementieren
+        }
+
+        function handleSurrender() {
+            console.log("Surrender clicked!");
+            // Logik für Surrender implementieren
+        }
+
+        // Fenstergröße ändern
+        window.addEventListener('resize', () => {
+            game.onresize();
+        });
+    </script>
+</body>
+</html>

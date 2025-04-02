@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Royale</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #2c3e50, #3498db); /* Gradient-Hintergrund */
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    #container {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px; /* Abstand zwischen Spiel und Mod-Menü */
+    }
+
+    #game-container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: url('https://img.alicdn.com/imgextra/i1/O1CN01cOgO0228KfUaIUM9k_!!6000000007914-54-tps-150-150.apng') no-repeat center center; /* Spielhintergrund */
+      background-size: cover;
+      border: 5px solid #34495e;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #info p {
+      margin: 5px 0;
+    }
+
+    #mod-menu {
+      width: 300px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #mod-menu h3 {
+      margin-bottom: 15px;
+      text-align: center;
+      color: #3498db;
+    }
+
+    #mod-menu button {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    #mod-menu button:hover {
+      background-color: #2980b9;
+    }
+
+    #mod-menu .spawn-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    #mod-menu .spawn-buttons button {
+      flex: 1;
+    }
+
+    #alert-box {
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 5px;
+      text-align: center;
+      color: white;
+      font-size: 14px;
+      min-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div id="info">
+        <p>Leben: <span id="health">100</span></p>
+        <p>Punkte: <span id="score">0</span></p>
+        <p>Multi-Shot: <span id="multi-shot">1</span>x</p>
+        <p>Geschwindigkeit: <span id="speed">5</span></p>
+        <p>Power-Ups gesammelt: <span id="powerups-collected">0</span></p>
+      </div>
+    </div>
+
+    <div id="mod-menu">
+      <h3>Mod-Menü</h3>
+      <button onclick="toggleGodMode()">GODMODE: Unverwundbarkeit</button>
+      <button onclick="healPlayer()">HEAL: Volle Gesundheit</button>
+      <button onclick="increaseMultiShot()">POWERUP: Multi-Shot +1</button>
+      <button onclick="slowEnemies()">SLOW: Gegner langsamer</button>
+      <button onclick="killAllEnemies()">KILLALL: Alle Gegner eliminieren</button>
+      <button onclick="doublePlayerSpeed()">DOUBLE SPEED: Doppelt so schnell</button>
+      <button onclick="resetPlayerSpeed()">RESET SPEED: Geschwindigkeit zurücksetzen</button>
+      <button onclick="spawnWave()">SPAWN WAVE: Neue Gegnerwelle</button>
+      <button onclick="spawnPowerUps(10)">SPAWN: 10 Power-Ups</button>
+      <button onclick="spawnPowerUps(100)">SPAWN: 100 Power-Ups</button>
+      <button onclick="spawnPowerUps(1000)">SPAWN: 1000 Power-Ups</button>
+      <button onclick="collectAllPowerUps()">ALLE POWER-UPS EINSAMMELN</button>
+      <button onclick="invertControls()">INVERT CONTROLS: Steuerung umkehren</button>
+      <button onclick="toggleInfiniteAmmo()">INFINITE AMMO: Unendlich Munition</button>
+      <button onclick="toggleAutoFire()">AUTO FIRE: Automatisches Feuer</button>
+      <button onclick="spawnBoss()">SPAWN BOSS: Boss erscheinen lassen</button>
+      <button onclick="rainbowMode()">RAINBOW MODE: Regenbogen-Farben</button>
+      <button onclick="freezeGame()">FREEZE GAME: Spiel einfrieren</button>
+      <button onclick="unfreezeGame()">UNFREEZE GAME: Spiel fortsetzen</button>
+      <button onclick="toggleNightVision()">NIGHT VISION: Nachtsicht aktivieren</button>
+      <button onclick="toggleSuperJump()">SUPER JUMP: Super-Sprung aktivieren</button>
+      <button onclick="showStats()">SHOW STATS: Statistiken anzeigen</button>
+      <div id="alert-box">Willkommen beim Spiel!</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas-Größe anpassen
+    canvas.width = 800;
+    canvas.height = 600;
+
+    // Spieler
+    const player = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      size: 20,
+      speed: 5,
+      health: 100,
+      score: 0,
+      multiShot: 1, // Neue Eigenschaft für Multi-Shot
+      godMode: false, // Cheat-Modus
+      infiniteAmmo: false, // Unendlich Munition
+      autoFire: false, // Automatisches Feuer
+      invertedControls: false, // Umgekehrte Steuerung
+      superJump: false, // Super-Sprung
+      frozen: false, // Spiel eingefroren
+      powerUpsCollected: 0, // Anzahl der eingesammelten Power-Ups
+    };
+
+    // Gegner
+    const enemies = [];
+    let waveNumber = 1; // Aktuelle Welle
+
+    // Power-Ups
+    const powerUps = [];
+
+    // Geschosse (Kugeln)
+    const bullets = [];
+
+    // Tasteneingaben
+    const keys = {};
+
+    // Event Listener für Tastatureingaben
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    // Mausposition
+    let mouseX = 0;
+    let mouseY = 0;
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+
+    // Schießen mit der Maus
+    canvas.addEventListener('click', () => {
+      if (!player.infiniteAmmo) {
+        const angle = Math.atan2(mouseY - (player.y + player.size / 2), mouseX - (player.x + player.size / 2));
+        for (let i = 0; i < player.multiShot; i++) {
+          const spreadAngle = angle + (i - Math.floor(player.multiShot / 2)) * 0.1; // Streuung für Multi-Shot
+          bullets.push({
+            x: player.x + player.size / 2,
+            y: player.y + player.size / 2,
+            dx: Math.cos(spreadAngle) * 10,
+            dy: Math.sin(spreadAngle) * 10,
+          });
+        }
+      }
+    });
+
+    // Automatisches Feuer
+    function handleAutoFire() {
+      if (player.autoFire && !player.frozen) {
+        const angle = Math.atan2(mouseY - (player.y + player.size / 2), mouseX - (player.x + player.size / 2));
+        for (let i = 0; i < player.multiShot; i++) {
+          const spreadAngle = angle + (i - Math.floor(player.multiShot / 2)) * 0.1; // Streuung für Multi-Shot
+          bullets.push({
+            x: player.x + player.size / 2,
+            y: player.y + player.size / 2,
+            dx: Math.cos(spreadAngle) * 10,
+            dy: Math.sin(spreadAngle) * 10,
+          });
+        }
+      }
+    }
+
+    // Funktion zum Zeichnen des Spielers
+    function drawPlayer() {
+      if (player.rainbowMode) {
+        ctx.fillStyle = `hsl(${Date.now() % 360}, 100%, 50%)`; // Regenbogen-Farben
+      } else {
+        ctx.fillStyle = player.godMode ? 'gold' : 'blue'; // Goldfarben im Godmode
+      }
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+
+      // Ziellinie zur Maus zeichnen
+      ctx.strokeStyle = 'black';
+      ctx.beginPath();
+      ctx.moveTo(player.x + player.size / 2, player.y + player.size / 2);
+      ctx.lineTo(mouseX, mouseY);
+      ctx.stroke();
+    }
+
+    // Funktion zum Zeichnen der Gegner
+    function drawEnemies() {
+      ctx.fillStyle = 'red';
+      enemies.forEach((enemy) => {
+        ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+      });
+    }
+
+    // Funktion zum Zeichnen der Power-Ups
+    function drawPowerUps() {
+      ctx.fillStyle = 'yellow';
+      powerUps.forEach((powerUp) => {
+        ctx.beginPath();
+        ctx.arc(powerUp.x, powerUp.y, powerUp.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+      });
+    }
+
+    // Funktion zum Zeichnen der Geschosse
+    function drawBullets() {
+      ctx.fillStyle = 'black';
+      bullets.forEach((bullet) => {
+        ctx.fillRect(bullet.x, bullet.y, 5, 5);
+      });
+    }
+
+    // Funktion zur Bewegung des Spielers
+    function movePlayer() {
+      if (player.frozen) return;
+
+      const speed = player.superJump ? player.speed * 2 : player.speed;
+
+      if ((keys['w'] || keys['arrowup']) && player.y > 0) player.y -= player.invertedControls ? -speed : speed;
+      if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.size) player.y += player.invertedControls ? -speed : speed;
+      if ((keys['a'] || keys['arrowleft']) && player.x > 0) player.x -= player.invertedControls ? -speed : speed;
+      if ((keys['d'] || keys['arrowright']) && player.x < canvas.width - player.size) player.x += player.invertedControls ? -speed : speed;
+    }
+
+    // Funktion zur Überprüfung von Kollisionen
+    function checkCollisions() {
+      // Gegner-Kollision
+      enemies.forEach((enemy, enemyIndex) => {
+        if (
+          player.x < enemy.x + enemy.size &&
+          player.x + player.size > enemy.x &&
+          player.y < enemy.y + enemy.size &&
+          player.y + player.size > enemy.y
+        ) {
+          if (!player.godMode) {
+            player.health -= 10;
+            if (player.health <= 0) {
+              showNotification('Game Over!');
+              resetGame();
+            }
+          }
+          enemies.splice(enemyIndex, 1); // Entferne den Gegner
+        }
+      });
+
+      // Power-Up-Kollision
+      powerUps.forEach((powerUp, index) => {
+        const dx = player.x - powerUp.x;
+        const dy = player.y - powerUp.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < player.size / 2 + powerUp.size) {
+          player.multiShot++; // Erhöhe Multi-Shot-Level
+          player.powerUpsCollected++;
+          document.getElementById('multi-shot').textContent = player.multiShot;
+          document.getElementById('powerups-collected').textContent = player.powerUpsCollected;
+          powerUps.splice(index, 1); // Entferne das Power-Up
+        }
+      });
+
+      // Geschoss-Kollision mit Gegnern
+      bullets.forEach((bullet, bulletIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+          if (
+            bullet.x < enemy.x + enemy.size &&
+            bullet.x + 5 > enemy.x &&
+            bullet.y < enemy.y + enemy.size &&
+            bullet.y + 5 > enemy.y
+          ) {
+            player.score += 10; // Punkte für getroffenen Gegner
+            bullets.splice(bulletIndex, 1); // Entferne das Geschoss
+            enemies.splice(enemyIndex, 1); // Entferne den Gegner
+          }
+        });
+      });
+    }
+
+    // Funktion zur Bewegung der Gegner
+    function moveEnemies() {
+      enemies.forEach((enemy) => {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0) {
+          enemy.x += dx / distance * enemy.speed;
+          enemy.y += dy / distance * enemy.speed;
+        }
+      });
+    }
+
+    // Funktion zur Bewegung der Geschosse
+    function moveBullets() {
+      bullets.forEach((bullet, index) => {
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+
+        // Entferne Geschosse, die außerhalb des Bildschirms sind
+        if (
+          bullet.x < 0 ||
+          bullet.x > canvas.width ||
+          bullet.y < 0 ||
+          bullet.y > canvas.height
+        ) {
+          bullets.splice(index, 1);
+        }
+      });
+    }
+
+    // Funktion zur Initialisierung der Gegnerwellen
+    function spawnWave() {
+      const enemyCount = waveNumber * 5; // Mehr Gegner pro Welle
+      for (let i = 0; i < enemyCount; i++) {
+        const side = Math.floor(Math.random() * 4); // Zufällige Seite (oben, unten, links, rechts)
+        let x, y;
+
+        if (side === 0) {
+          // Oben
+          x = Math.random() * canvas.width;
+          y = -20;
+        } else if (side === 1) {
+          // Unten
+          x = Math.random() * canvas.width;
+          y = canvas.height + 20;
+        } else if (side === 2) {
+          // Links
+          x = -20;
+          y = Math.random() * canvas.height;
+        } else {
+          // Rechts
+          x = canvas.width + 20;
+          y = Math.random() * canvas.height;
+        }
+
+        enemies.push({
+          x: x,
+          y: y,
+          size: Math.random() * 15 + 10, // Zufällige Größe
+          speed: Math.random() * 2 + 1, // Zufällige Geschwindigkeit
+        });
+      }
+      waveNumber++;
+    }
+
+    // Funktion zur Initialisierung der Power-Ups
+    function spawnPowerUps(count = 3) {
+      for (let i = 0; i < count; i++) {
+        powerUps.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: 10,
+        });
+      }
+      showNotification(`${count} Power-Ups gespawnt!`);
+    }
+
+    // Funktion zum Sammeln aller Power-Ups
+    function collectAllPowerUps() {
+      const collectedCount = powerUps.length;
+      player.multiShot += collectedCount; // Erhöhe Multi-Shot um die Anzahl der Power-Ups
+      player.powerUpsCollected += collectedCount;
+      document.getElementById('multi-shot').textContent = player.multiShot;
+      document.getElementById('powerups-col
+	        powerUps.length = 0; // Entferne alle Power-Ups
+      showNotification(`Alle ${collectedCount} Power-Ups wurden eingesammelt!`);
+    }
+
+    // Funktion zum Zurücksetzen des Spiels
+    function resetGame() {
+      player.health = 100;
+      player.score = 0;
+      player.multiShot = 1;
+      player.godMode = false;
+      player.infiniteAmmo = false;
+      player.autoFire = false;
+      player.invertedControls = false;
+      player.superJump = false;
+      player.frozen = false;
+      player.powerUpsCollected = 0;
+      document.getElementById('multi-shot').textContent = player.multiShot;
+      document.getElementById('powerups-collected').textContent = player.powerUpsCollected;
+      document.getElementById('speed').textContent = player.speed;
+      enemies.length = 0;
+      powerUps.length = 0;
+      bullets.length = 0;
+      waveNumber = 1;
+      spawnWave();
+      spawnPowerUps();
+    }
+
+    // Funktion zur Verdopplung der Spieler-Geschwindigkeit
+    function doublePlayerSpeed() {
+      player.speed *= 2;
+      document.getElementById('speed').textContent = player.speed;
+      showNotification('Spieler-Geschwindigkeit verdoppelt!');
+    }
+
+    // Funktion zum Zurücksetzen der Spieler-Geschwindigkeit
+    function resetPlayerSpeed() {
+      player.speed = 5;
+      document.getElementById('speed').textContent = player.speed;
+      showNotification('Spieler-Geschwindigkeit zurückgesetzt!');
+    }
+
+    // Funktion zum Umkehren der Steuerung
+    function invertControls() {
+      player.invertedControls = !player.invertedControls;
+      showNotification(player.invertedControls ? 'Steuerung umgekehrt!' : 'Steuerung normalisiert!');
+    }
+
+    // Funktion zum Aktivieren/Deaktivieren von unendlich Munition
+    function toggleInfiniteAmmo() {
+      player.infiniteAmmo = !player.infiniteAmmo;
+      showNotification(player.infiniteAmmo ? 'Unendlich Munition aktiviert!' : 'Unendlich Munition deaktiviert!');
+    }
+
+    // Funktion zum Aktivieren/Deaktivieren von automatischem Feuer
+    function toggleAutoFire() {
+      player.autoFire = !player.autoFire;
+      showNotification(player.autoFire ? 'Automatisches Feuer aktiviert!' : 'Automatisches Feuer deaktiviert!');
+    }
+
+    // Funktion zum Spawnen eines Bosses
+    function spawnBoss() {
+      enemies.push({
+        x: canvas.width / 2,
+        y: -50,
+        size: 50,
+        speed: 0.5,
+        health: 100,
+      });
+      showNotification('Boss erschienen!');
+    }
+
+    // Funktion zum Aktivieren/Deaktivieren des Regenbogen-Modus
+    function rainbowMode() {
+      player.rainbowMode = !player.rainbowMode;
+      showNotification(player.rainbowMode ? 'Regenbogen-Modus aktiviert!' : 'Regenbogen-Modus deaktiviert!');
+    }
+
+    // Funktion zum Einfrieren des Spiels
+    function freezeGame() {
+      player.frozen = true;
+      showNotification('Spiel eingefroren!');
+    }
+
+    // Funktion zum Fortsetzen des Spiels
+    function unfreezeGame() {
+      player.frozen = false;
+      showNotification('Spiel fortgesetzt!');
+    }
+
+    // Funktion zum Aktivieren/Deaktivieren der Nachtsicht
+    function toggleNightVision() {
+      const gameContainer = document.getElementById('game-container');
+      gameContainer.style.filter = gameContainer.style.filter === 'grayscale(100%)' ? 'none' : 'grayscale(100%)';
+      showNotification(gameContainer.style.filter === 'grayscale(100%)' ? 'Nachtsicht aktiviert!' : 'Nachtsicht deaktiviert!');
+    }
+
+    // Funktion zum Aktivieren/Deaktivieren des Super-Sprungs
+    function toggleSuperJump() {
+      player.superJump = !player.superJump;
+      showNotification(player.superJump ? 'Super-Sprung aktiviert!' : 'Super-Sprung deaktiviert!');
+    }
+
+    // Funktion zum Anzeigen der Statistiken
+    function showStats() {
+      alert(`
+        --- SPIELERSTATISTIKEN ---
+        Leben: ${player.health}
+        Punkte: ${player.score}
+        Multi-Shot: ${player.multiShot}x
+        Geschwindigkeit: ${player.speed}
+        Gesammelte Power-Ups: ${player.powerUpsCollected}
+      `);
+    }
+
+    // Hauptspiel-Schleife
+    function gameLoop() {
+      if (player.frozen) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPlayer();
+      drawEnemies();
+      drawPowerUps();
+      drawBullets();
+
+      movePlayer();
+      moveEnemies();
+      moveBullets();
+      checkCollisions();
+
+      handleAutoFire();
+
+      // Wenn alle Gegner besiegt sind, starte die nächste Welle
+      if (enemies.length === 0) {
+        spawnWave();
+        spawnPowerUps();
+      }
+
+      document.getElementById('health').textContent = player.health;
+      document.getElementById('score').textContent = player.score;
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Funktion zum Anzeigen von Benachrichtigungen
+    function showNotification(message) {
+      const alertBox = document.getElementById('alert-box');
+      alertBox.textContent = message;
+
+      // Optional: Nachricht nach 3 Sekunden ausblenden
+      setTimeout(() => {
+        alertBox.textContent = '';
+      }, 3000);
+    }
+
+    // Cheat-Funktionen
+    function toggleGodMode() {
+      player.godMode = !player.godMode;
+      showNotification(player.godMode ? 'GODMODE aktiviert!' : 'GODMODE deaktiviert.');
+    }
+
+    function healPlayer() {
+      player.health = 100;
+      showNotification('Volle Gesundheit wiederhergestellt!');
+    }
+
+    function increaseMultiShot() {
+      player.multiShot++;
+      document.getElementById('multi-shot').textContent = player.multiShot;
+      showNotification('Multi-Shot-Level erhöht!');
+    }
+
+    function slowEnemies() {
+      enemies.forEach((enemy) => {
+        enemy.speed = Math.max(0.5, enemy.speed - 0.5);
+      });
+      showNotification('Gegner wurden langsamer!');
+    }
+
+    function killAllEnemies() {
+      enemies.length = 0;
+      showNotification('Alle Gegner eliminiert!');
+    }
+
+    // Spiel starten
+    spawnWave();
+    spawnPowerUps();
+    gameLoop();
+  </script>
+</body>
+</html>

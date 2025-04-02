@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS:GO Case Opener</title>
+    <style>
+        body {
+            background: radial-gradient(circle, rgba(23, 23, 23, 1) 0%, rgba(0, 0, 0, 1) 100%);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            perspective: 1000px;
+        }
+
+        .case {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.imgur.com/9VZsJmL.png') no-repeat center center;
+            background-size: cover;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transform-style: preserve-3d;
+            animation: openCase 5s ease-in-out forwards;
+        }
+
+        @keyframes openCase {
+            0% {
+                transform: rotateY(0deg);
+            }
+            50% {
+                transform: rotateY(90deg);
+            }
+            100% {
+                transform: rotateY(180deg);
+            }
+        }
+
+        .result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            animation: revealItem 3s ease-in-out forwards;
+        }
+
+        @keyframes revealItem {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .item-image {
+            width: 200px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .rarity-indicator {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .rare { color: #4CAF50; }
+        .epic { color: #3498db; }
+        .legendary { color: #f1c40f; }
+        .mythical { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="case"></div>
+    <div class="result" id="result">
+        <img id="itemImage" src="" alt="Item" class="item-image">
+        <p id="itemName" class="rarity-indicator"></p>
+    </div>
+</div>
+
+<button id="openCase">Kiste öffnen</button>
+
+<script>
+    const items = [
+        { name: "AK-47 | Redline", rarity: "Rare", image: "https://i.imgur.com/9VZsJmL.png", sound: "rare" },
+        { name: "M4A4 | Howl", rarity: "Epic", image: "https://i.imgur.com/3hQjTqF.png", sound: "epic" },
+        { name: "Desert Eagle | Golden Coils", rarity: "Legendary", image: "https://i.imgur.com/3hQjTqF.png", sound: "legendary" },
+        { name: "P250 | Cyrex", rarity: "Mythical", image: "https://i.imgur.com/3hQjTqF.png", sound: "mythical" }
+        // Add more items here...
+    ];
+
+    const sounds = {
+        rare: new Audio('https://example.com/rare.mp3'),
+        epic: new Audio('https://example.com/epic.mp3'),
+        legendary: new Audio('https://example.com/legendary.mp3'),
+        mythical: new Audio('https://example.com/mythical.mp3')
+    };
+
+    document.getElementById('openCase').addEventListener('click', () => {
+        openCase();
+    });
+
+    function openCase() {
+        const resultDiv = document.getElementById('result');
+        const itemImage = document.getElementById('itemImage');
+        const itemName = document.getElementById('itemName');
+
+        // Reset previous result
+        resultDiv.style.animation = 'none';
+        resultDiv.offsetHeight; // Trigger reflow
+        resultDiv.style.animation = 'revealItem 3s ease-in-out forwards';
+
+        itemImage.src = '';
+        itemName.textContent = '';
+
+        // Simulate opening delay
+        setTimeout(() => {
+            const randomIndex = Math.floor(Math.random() * items.length);
+            const selectedItem = items[randomIndex];
+
+            // Play sound based on rarity
+            sounds[selectedItem.sound].play();
+
+            // Show the result
+            itemImage.src = selectedItem.image;
+            itemName.textContent = `${selectedItem.name}`;
+            itemName.className = `rarity-indicator ${selectedItem.rarity.toLowerCase()}`;
+        }, 5000); // Match with animation duration
+    }
+</script>
+
+</body>
+</html>

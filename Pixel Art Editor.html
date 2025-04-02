@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Editor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            background: linear-gradient(to bottom, #4c1d95, #301934);
+            color: white;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(255, 0, 255, 0.7);
+            text-align: center;
+        }
+
+        .editor-container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            overflow: hidden;
+        }
+
+        .canvas {
+            display: grid;
+            gap: 1px;
+            border: 2px solid white;
+            transition: transform 0.2s ease;
+        }
+
+        .pixel {
+            width: 20px;
+            height: 20px;
+            background-color: #301934;
+            cursor: pointer;
+        }
+
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 100%;
+            overflow-y: auto;
+            padding: 10px;
+            border-left: 2px solid white;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(8, 30px);
+            gap: 5px;
+        }
+
+        .color-picker {
+            width: 30px;
+            height: 30px;
+            border: 2px solid white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .color-picker:hover {
+            transform: scale(1.1);
+            transition: transform 0.2s ease;
+        }
+
+        .selected {
+            border: 4px solid yellow !important;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #e63946;
+        }
+
+        .brush-size {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .brush-size label {
+            font-size: 14px;
+        }
+
+        .brush-size input {
+            width: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Pixel Art Editor</h1>
+
+<div class="editor-container">
+    <!-- Canvas -->
+    <div class="canvas-container" id="canvasContainer">
+        <div class="canvas" id="canvas"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="brush-size">
+            <label for="brushSize">Brush Größe:</label>
+            <input type="number" id="brushSize" value="1" min="1" max="5">
+        </div>
+
+        <!-- Farbpalette -->
+        <div class="color-palette">
+            <div class="color-picker" style="background-color: red;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: blue;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: green;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: yellow;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: purple;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: orange;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: black;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: pink;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: brown;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: gray;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: cyan;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: lime;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: teal;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: maroon;" onclick="selectColor(this)"></div>
+            <div class="color-picker" style="background-color: navy;" onclick="selectColor(this)"></div>
+            <div class="color-picker eraser" onclick="selectColor(this)">Eraser</div>
+        </div>
+
+        <!-- Funktionen -->
+        <button onclick="saveAsImage()">Als Bild Speichern</button>
+        <button onclick="saveArt()">Als JSON Speichern</button>
+        <button onclick="loadArt()">JSON Laden</button>
+        <button onclick="resizeCanvas()">Canvas Größe ändern</button>
+        <button onclick="clearCanvas()">Canvas leeren</button>
+        <button onclick="undoAction()">Rückgängig</button>
+        <button onclick="redoAction()">Wiederholen</button>
+        <button onclick="toggleGridLines()">Gitter anzeigen/ausblenden</button>
+        <button onclick="zoomIn()">Hineinzoomen</button>
+        <button onclick="zoomOut()">Herauszoomen</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const canvasContainer = document.getElementById("canvasContainer");
+    let selectedColor = "red"; // Standardfarbe
+    let brushSize = 1; // Standard Brush Größe
+    const brushSizeInput = document.getElementById("brushSize");
+    let undoStack = [];
+    let redoStack = [];
+    let showGridLines = true;
+    let zoomLevel = 1;
+
+    // Canvas generieren
+    function generateCanvas(rows = 20, columns = 20) {
+        canvas.style.gridTemplateColumns = `repeat(${columns}, 20px)`;
+        canvas.style.gridTemplateRows = `repeat(${rows}, 20px)`;
+        canvas.innerHTML = ''; // Altes Canvas löschen
+        for (let i = 0; i < rows * columns; i++) {
+            const pixel = document.createElement("div");
+            pixel.classList.add("pixel");
+            pixel.addEventListener("click", () => paint(pixel));
+            canvas.appendChild(pixel);
+        }
+    }
+
+    generateCanvas(); // Standardgröße 20x20
+
+    // Brush Größe aktualisieren
+    brushSizeInput.addEventListener("input", (e) => {
+        brushSize = parseInt(e.target.value);
+    });
+
+    // Farbe auswählen
+    function selectColor(colorPicker) {
+        const currentSelected = document.querySelector(".selected");
+        if (currentSelected) currentSelected.classList.remove("selected");
+        colorPicker.classList.add("selected");
+
+        if (colorPicker.classList.contains("eraser")) {
+            selectedColor = "#301934"; // Hintergrundfarbe für den Radierer
+        } else {
+            selectedColor = colorPicker.style.backgroundColor;
+        }
+    }
+
+    // Pixel färben
+    function paint(pixel) {
+        const index = Array.from(canvas.children).indexOf(pixel);
+
+        // Undo-Stack aktualisieren
+        const currentState = Array.from(canvas.children).map(p => p.style.backgroundColor);
+        undoStack.push(currentState);
+        redoStack = []; // Reset Redo-Stack
+
+        // Paint Brush Größe beachten
+        for (let i = -brushSize + 1; i < brushSize; i++) {
+            for (let j = -brushSize + 1; j < brushSize; j++) {
+                const targetIndex = index + i * 20 + j;
+                if (targetIndex >= 0 && targetIndex < canvas.children.length) {
+                    canvas.children[targetIndex].style.backgroundColor = selectedColor;
+                }
+            }
+        }
+    }
+
+    // Als Bild speichern
+    function saveAsImage() {
+        // Erstelle ein temporäres Canvas-Element
+        const tempCanvas = document.createElement("canvas");
+        const ctx = tempCanvas.getContext("2d");
+        const rows = 20;
+        const columns = 20;
+        tempCanvas.width = columns * 20;
+        tempCanvas.height = rows * 20;
+
+        // Zeichne das Pixelgrid auf das temporäre Canvas
+        Array.from(canvas.children).forEach((pixel, i) => {
+            const row = Math.floor(i / columns);
+            const col = i % columns;
+            ctx.fillStyle = pixel.style.backgroundColor || "#301934";
+            ctx.fillRect(col * 20, row * 20, 20, 20);
+        });
+
+        // Speichere das Bild
+        const link = document.createElement("a");
+        link.href = tempCanvas.toDataURL("image/png");
+        link.download = "pixel-art.png";
+        link.click();
+    }
+
+    // JSON speichern
+    function saveArt() {
+        const pixels = Array.from(canvas.children);
+        const data = pixels.map(pixel => pixel.style.backgroundColor);
+        const artData = { rows: 20, columns: 20, data };
+        const blob = new Blob([JSON.stringify(artData)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "pixel-art.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // JSON laden
+    function loadArt() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    const artData = JSON.parse(content);
+                    generateCanvas(artData.rows, artData.columns);
+                    artData.data.forEach((color, i) => {
+                        canvas.children[i].style.backgroundColor = color;
+                    });
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    // Canvas Größe ändern
+    function resizeCanvas() {
+        const rows = prompt("Anzahl der Zeilen eingeben:", "20");
+        const columns = prompt("Anzahl der Spalten eingeben:", "20");
+        if (rows && columns) {
+            generateCanvas(parseInt(rows), parseInt(columns));
+        }
+    }
+
+    // Canvas leeren
+    function clearCanvas() {
+        Array.from(canvas.children).forEach(pixel => {
+            pixel.style.backgroundColor = "#301934";
+        });
+    }
+
+    // Rückgängig
+    function undoAction() {
+        if (undoStack.length > 0) {
+            redoStack.push(undoStack.pop());
+            const lastState = undoStack[undoStack.length - 1] || [];
+            Array.from(canvas.children).forEach((pixel, i) => {
+                pixel.style.backgroundColor = lastState[i] || "#301934";
+            });
+        }
+    }
+
+    // Wiederholen
+    function redoAction() {
+        if (redoStack.length > 0) {
+            const nextState = redoStack.pop();
+            undoStack.push(nextState);
+            Array.from(canvas.children).forEach((pixel, i) => {
+                pixel.style.backgroundColor = nextState[i] || "#301934";
+            });
+        }
+    }
+
+    // Gitter anzeigen/ausblenden
+    function toggleGridLines() {
+        showGridLines = !showGridLines;
+        canvas.style.gap = showGridLines ? "1px" : "0px";
+    }
+
+    // Hineinzoomen
+    function zoomIn() {
+        zoomLevel += 0.1;
+        canvas.style.transform = `scale(${zoomLevel})`;
+    }
+
+    // Herauszoomen
+    function zoomOut() {
+        if (zoomLevel > 0.1) {
+            zoomLevel -= 0.1;
+            canvas.style.transform = `scale(${zoomLevel})`;
+        }
+    }
+</script>
+
+</body>
+</html>

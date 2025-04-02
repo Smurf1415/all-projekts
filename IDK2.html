@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellenspiel</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            overflow: hidden; /* Verhindert Scrollbalken */
+            cursor: none; /* Blendet die Maus aus */
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+        }
+        #cheatMenu {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            width: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff00ff;
+            padding: 10px;
+            color: white;
+            font-size: 16px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        #messageBox {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border: 2px solid #ff00ff;
+            color: white;
+            font-size: 18px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="messageBox"></div>
+    <div id="cheatMenu">
+        <h3>Cheat-Menü</h3>
+        <button onclick="player.health = 100; showMessage('Gesundheit aufgefüllt!')">Gesundheit auffüllen</button><br>
+        <button onclick="player.speed += 2; showMessage('Geschwindigkeit erhöht!')">Geschwindigkeit erhöhen</button><br>
+        <button onclick="player.multiShot = true; setTimeout(() => player.multiShot = false, 10000); showMessage('Multi-Schuss für 10 Sekunden aktiviert!')">Multi-Schuss aktivieren</button><br>
+        <button onclick="player.damageBoost = true; setTimeout(() => player.damageBoost = false, 10000); showMessage('Schadenboost für 10 Sekunden aktiviert!')">Schadenboost aktivieren</button><br>
+        <button onclick="wave = 1; enemies = []; spawnEnemies(); showMessage('Zurück zur ersten Welle!')">Zurück zur ersten Welle</button><br>
+        <button onclick="score += 100; showMessage('100 Punkte erhalten!')">100 Punkte erhalten</button><br>
+        <button onclick="player.radius += 5; showMessage('Spielergröße vergrößert!')">Spielergröße vergrößern</button><br>
+        <button onclick="for (let i = 0; i < wave * 2; i++) spawnEnemies(); showMessage('Weitere Feinde gespawnt!')">Weitere Feinde spawnen</button><br>
+        <button onclick="bullets.forEach(b => b.radius *= 2); showMessage('Kugeln vergrößern!')">Kugeln vergrößern</button><br>
+        <button onclick="player.speed = Math.max(player.speed - 2, 1); showMessage('Geschwindigkeit verringert!')">Geschwindigkeit verringern</button><br>
+    </div>
+    <script>
+        // Canvas und Kontext initialisieren
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('messageBox');
+
+        // Spielvariablen
+        let player, enemies, bullets, powerUps, wave, score;
+
+        // Initialisierung des Spiels
+        function init() {
+            player = { 
+                x: canvas.width / 2, 
+                y: canvas.height / 2, 
+                radius: 15, 
+                speed: 5, 
+                color: 'blue', 
+                health: 100,
+                multiShot: false,
+                damageBoost: false,
+                speedBoost: false
+            };
+            enemies = [];
+            bullets = [];
+            powerUps = [];
+            wave = 1;
+            score = 0;
+
+            spawnEnemies();
+            gameLoop();
+        }
+
+        // Nachricht anzeigen
+        function showMessage(message) {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            setTimeout(() => messageBox.style.display = 'none', 2000); // 2 Sekunden anzeigen
+        }
+
+        // Spielerbewegung
+        function movePlayer(dx, dy) {
+            player.x += dx;
+            player.y += dy;
+
+            // Begrenzen des Spielers innerhalb des Canvas
+            if (player.x - player.radius < 0) player.x = player.radius;
+            if (player.x + player.radius > canvas.width) player.x = canvas.width - player.radius;
+            if (player.y - player.radius < 0) player.y = player.radius;
+            if (player.y + player.radius > canvas.height) player.y = canvas.height - player.radius;
+        }
+
+        // Maussteuerung für Schuss
+        let mouse = { x: 0, y: 0 };
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX - canvas.offsetLeft;
+            mouse.y = e.clientY - canvas.offsetTop;
+        });
+
+        canvas.addEventListener('click', () => {
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+
+            if (player.multiShot) {
+                // Multi-Schuss: Drei Kugeln in leicht unterschiedlichen Winkeln
+                for (let i = -1; i <= 1; i++) {
+                    const bulletAngle = angle + (i * 0.2); // Leichte Abweichung
+                    const speed = 10;
+                    const bullet = {
+                        x: player.x,
+                        y: player.y,
+                        vx: Math.cos(bulletAngle) * speed,
+                        vy: Math.sin(bulletAngle) * speed,
+                        radius: player.damageBoost ? 10 : 5,
+                        color: 'white'
+                    };
+                    bullets.push(bullet);
+                }
+            } else {
+                // Einzelner Schuss
+                const speed = 10;
+                const bullet = {
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: player.damageBoost ? 10 : 5,
+                    color: 'white'
+                };
+                bullets.push(bullet);
+            }
+        });
+
+        // Feindspawning am Rand
+        function spawnEnemies() {
+            for (let i = 0; i < wave; i++) {
+                const side = Math.floor(random(0, 4)); // Zufällige Seite (0: oben, 1: rechts, 2: unten, 3: links)
+                let x, y;
+
+                if (side === 0) { // Oben
+                    x = random(0, canvas.width);
+                    y = -30;
+                } else if (side === 1) { // Rechts
+                    x = canvas.width + 30;
+                    y = random(0, canvas.height);
+                } else if (side === 2) { // Unten
+                    x = random(0, canvas.width);
+                    y = canvas.height + 30;
+                } else { // Links
+                    x = -30;
+                    y = random(0, canvas.height);
+                }
+
+                const enemy = {
+                    x: x,
+                    y: y,
+                    radius: 15,
+                    speed: random(1, 3),
+                    color: 'red'
+                };
+                enemies.push(enemy);
+            }
+        }
+
+        // Power-Up-Spawning
+        function spawnPowerUp(x, y) {
+            if (random(0, 100) < 20) { // 20% Chance für ein Power-Up
+                const type = ['multiShot', 'speedBoost', 'damageBoost'][Math.floor(random(0, 3))];
+                const powerUp = {
+                    x: x,
+                    y: y,
+                    radius: 10,
+                    type: type,
+                    color: type === 'multiShot' ? 'yellow' : type === 'speedBoost' ? 'green' : 'orange'
+                };
+                powerUps.push(powerUp);
+            }
+        }
+
+        // Kollisionserkennung
+        function checkCollisions() {
+            // Kollision zwischen Kugeln und Feinden
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const distance = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+                    if (distance < bullet.radius + enemy.radius) {
+                        enemies.splice(j, 1);
+                        bullets.splice(i, 1);
+                        score += 10;
+                        spawnPowerUp(enemy.x, enemy.y); // Power-Up spawnen
+                    }
+                }
+            }
+
+            // Kollision zwischen Spieler und Feinden
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (distance < player.radius + enemy.radius) {
+                    player.health -= 10;
+                    enemies.splice(i, 1);
+                    if (player.health <= 0) {
+                        showMessage("Game Over!");
+                        init();
+                    }
+                }
+            }
+
+            // Kollision zwischen Spieler und Power-Ups
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const powerUp = powerUps[i];
+                const distance = Math.hypot(player.x - powerUp.x, player.y - powerUp.y);
+                if (distance < player.radius + powerUp.radius) {
+                    if (powerUp.type === 'multiShot') {
+                        player.multiShot = true;
+                        setTimeout(() => player.multiShot = false, 10000); // 10 Sekunden Dauer
+                        showMessage("Power-Up: Multi-Schuss aktiviert!");
+                    } else if (powerUp.type === 'speedBoost') {
+                        player.speed += 2;
+                        setTimeout(() => player.speed -= 2, 10000); // 10 Sekunden Dauer
+                        showMessage("Power-Up: Geschwindigkeitsbonus aktiviert!");
+                    } else if (powerUp.type === 'damageBoost') {
+                        player.damageBoost = true;
+                        setTimeout(() => player.damageBoost = false, 10000); // 10 Sekunden Dauer
+                        showMessage("Power-Up: Schadenboost aktiviert!");
+                    }
+                    powerUps.splice(i, 1);
+                }
+            }
+        }
+
+        // Tastatursteuerung (WASD)
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Update der Spiellogik
+        function update() {
+            // Spielerbewegung mit WASD
+            if (keys['w']) movePlayer(0, -player.speed); // Hoch
+            if (keys['s']) movePlayer(0, player.speed);  // Runter
+            if (keys['a']) movePlayer(-player.speed, 0); // Links
+            if (keys['d']) movePlayer(player.speed, 0);  // Rechts
+
+            // Kugelbewegung
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+
+                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Feindbewegung (auf den Spieler zu)
+            for (const enemy of enemies) {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const distance = Math.hypot(dx, dy);
+                enemy.x += (dx / distance) * enemy.speed;
+                enemy.y += (dy / distance) * enemy.speed;
+            }
+
+            // Power-Up Bewegung
+            for (const powerUp of powerUps) {
+                powerUp.y += 1; // Power-Ups fallen langsam nach unten
+            }
+
+            // Wellenfortschritt
+            if (enemies.length === 0) {
+                wave++;
+                spawnEnemies();
+            }
+
+            checkCollisions();
+        }
+
+        // Zeichnen der Elemente
+        function draw() {
+            // Hintergrund mit Farbverlauf
+            const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+            gradient.addColorStop(0, '#000'); // Schwarz
+            gradient.addColorStop(0.5, '#6a0dad'); // Lila
+            gradient.addColorStop(1, '#ff00ff'); // Pink
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Spieler zeichnen
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Gesundheitsanzeige
+            ctx.fillStyle = 'red';
+            ctx.fillRect(10, 10, player.health * 2, 10);
+
+            // Ziellinie zeichnen (länger)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.stroke();
+
+            // Crosshair zeichnen
+            const crosshairSize = 15;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mouse.x - crosshairSize, mouse.y);
+            ctx.lineTo(mouse.x + crosshairSize, mouse.y);
+            ctx.moveTo(mouse.x, mouse.y - crosshairSize);
+            ctx.lineTo(mouse.x, mouse.y + crosshairSize);
+            ctx.stroke();
+
+            // Kugeln zeichnen
+            for (const bullet of bullets) {
+                ctx.fillStyle = bullet.color;
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Feinde zeichnen
+            for (const enemy of enemies) {
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Power-Ups zeichnen
+            for (const powerUp of powerUps) {
+                ctx.fillStyle = powerUp.color;
+                ctx.beginPath();
+                ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Score und Welle anzeigen
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.fillText(`Wave: ${wave}`, 10, 50);
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 80);
+        }
+
+        // Spiel-Loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Hilfsfunktionen
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Spiel starten
+        init();
+    </script>
+</body>
+</html>

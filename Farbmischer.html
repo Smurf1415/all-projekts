@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farbmischer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .color-box {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .slider-container {
+            margin: 15px auto;
+            text-align: center;
+        }
+        .slider {
+            width: 70%;
+            margin: 5px auto;
+            height: 8px;
+            border-radius: 5px;
+            background-color: #eaeaea;
+            outline: none;
+        }
+        .input-number {
+            width: 50px;
+            height: 25px;
+            text-align: center;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .output {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .output strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Farbkasten -->
+        <div class="color-box" id="color-box"></div>
+
+        <!-- Slider für Rot, Grün und Blau mit Anzeige der aktuellen Werte -->
+        <div class="slider-container">
+            <label for="red">Rot (R):</label>
+            <input type="range" id="red" class="slider" min="0" max="255" value="0" oninput="updateFromSlider('red')">
+            <input type="number" id="red-input" class="input-number" min="0" max="255" value="0" oninput="updateFromInput('red')">
+        </div>
+
+        <div class="slider-container">
+            <label for="green">Grün (G):</label>
+            <input type="range" id="green" class="slider" min="0" max="255" value="0" oninput="updateFromSlider('green')">
+            <input type="number" id="green-input" class="input-number" min="0" max="255" value="0" oninput="updateFromInput('green')">
+        </div>
+
+        <div class="slider-container">
+            <label for="blue">Blau (B):</label>
+            <input type="range" id="blue" class="slider" min="0" max="255" value="0" oninput="updateFromSlider('blue')">
+            <input type="number" id="blue-input" class="input-number" min="0" max="255" value="0" oninput="updateFromInput('blue')">
+        </div>
+
+        <!-- Ausgabe der Farbcodierung -->
+        <div class="output">
+            <strong>RGBA:</strong>
+            <span id="rgba-output"></span><br>
+            <strong>#Hex-Code:</strong>
+            <span id="hex-output"></span><br>
+            <strong>Normierte Werte (0-1):</strong>
+            <span id="normalized-output"></span>
+        </div>
+
+    </div>
+
+    <script>
+        function updateColor() {
+            const red = parseInt(document.getElementById('red').value);
+            const green = parseInt(document.getElementById('green').value);
+            const blue = parseInt(document.getElementById('blue').value);
+
+            document.getElementById('red-input').value = red;
+            document.getElementById('green-input').value = green;
+            document.getElementById('blue-input').value = blue;
+
+            const rgbColor = `rgb(${red}, ${green}, ${blue})`;
+            const hexColor = `#${componentToHex(red)}${componentToHex(green)}${componentToHex(blue)}`;
+
+            const normalizedRed = parseFloat(red / 255).toFixed(2);
+            const normalizedGreen = parseFloat(green / 255).toFixed(2);
+            const normalizedBlue = parseFloat(blue / 255).toFixed(2);
+
+            const cleanNormalizedRed = normalizedRed.replace(/\.?0+$/, '');
+            const cleanNormalizedGreen = normalizedGreen.replace(/\.?0+$/, '');
+            const cleanNormalizedBlue = normalizedBlue.replace(/\.?0+$/, '');
+
+            document.getElementById('color-box').style.backgroundColor = rgbColor;
+
+            document.getElementById('rgba-output').textContent = `rgba(${red}, ${green}, ${blue})`;
+            document.getElementById('hex-output').textContent = hexColor;
+            document.getElementById('normalized-output').textContent = `(${cleanNormalizedRed}, ${cleanNormalizedGreen}, ${cleanNormalizedBlue})`;
+        }
+
+        function componentToHex(c) {
+            const hex = c.toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }
+
+        function updateFromSlider(color) {
+            const sliderValue = document.getElementById(color).value;
+            document.getElementById(`${color}-input`).value = sliderValue;
+            updateColor();
+        }
+
+        function updateFromInput(color) {
+            const inputValue = document.getElementById(`${color}-input`).value;
+            document.getElementById(color).value = inputValue;
+            updateColor();
+        }
+
+        updateColor();
+    </script>
+
+</body>
+</html>

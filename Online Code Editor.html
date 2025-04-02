@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Code Editor</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #ff4d6d;
+      text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+      margin-bottom: 20px;
+    }
+
+    .header {
+      background-color: #000;
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(255, 77, 109, 0.8);
+    }
+
+    .editor-container {
+      display: flex;
+      gap: 20px;
+      width: 90%;
+      max-width: 1200px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    /* Linker Teil (Editor) */
+    .editor-column {
+      flex: 1;
+      min-width: 200px; /* Minimale Breite */
+      background-color: #000;
+      border: 2px solid #9b59b6; /* Lila Outline */
+      border-radius: 10px;
+      padding: 10px;
+      height: 400px;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 0 10px #9b59b6, 0 0 20px #9b59b6;
+      resize: both; /* Größenanpassung aktivieren */
+      overflow: auto; /* Scrollbar bei Bedarf anzeigen */
+    }
+
+    .editor-wrapper {
+      display: flex;
+      position: relative;
+      height: 100%;
+    }
+
+    /* Zeilennummern */
+    .line-numbers {
+      background-color: #1a0628;
+      color: #9b59b6;
+      font-family: monospace;
+      font-size: 1rem;
+      padding: 10px 0;
+      text-align: right;
+      user-select: none;
+      border-right: 2px solid #9b59b6;
+      width: 50px;
+      overflow-y: auto;
+      position: sticky; /* Fixiert die Position beim Scrollen */
+      top: 0; /* Am oberen Rand fixiert */
+    }
+
+    .line-numbers span {
+      display: block;
+      padding: 0 10px;
+      line-height: 1.5;
+    }
+
+    /* Editor */
+    .editor-column textarea {
+      width: calc(100% - 50px); /* Platz für Zeilennummern */
+      height: 100%;
+      background-color: #000;
+      color: #9b59b6; /* Lila Textfarbe */
+      font-family: monospace;
+      font-size: 1rem;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 10px;
+      line-height: 1.5;
+    }
+
+    /* Rechter Teil (Output) */
+    .output {
+      flex: 1;
+      min-width: 200px; /* Minimale Breite */
+      background-color: #000;
+      border: 2px solid #ff4d6d; /* Rot Outline */
+      border-radius: 10px;
+      padding: 10px;
+      height: 400px;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+      resize: both; /* Größenanpassung aktivieren */
+      overflow: auto; /* Scrollbar bei Bedarf anzeigen */
+    }
+
+    .output iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Scrollbar-Design */
+    ::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #1a0628;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #ff4d6d;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #e74c3c;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      color: #000;
+      background-color: #ff4d6d;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+    }
+
+    button:hover {
+      background-color: #e74c3c;
+      transform: scale(1.05);
+    }
+
+    .toolbox {
+      position: fixed;
+      top: 20px;
+      right: -300px;
+      width: 300px;
+      height: 100%;
+      background-color: #1a0628;
+      border-left: 2px solid #ff4d6d;
+      box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+      transition: right 0.3s ease;
+      z-index: 1000;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toolbox.open {
+      right: 0;
+    }
+
+    .toolbox h3 {
+      color: #ff4d6d;
+      margin-bottom: 10px;
+    }
+
+    .toolbox label {
+      color: #9b59b6;
+      font-size: 0.9rem;
+    }
+
+    .toolbox input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    .menu-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #ff4d6d;
+      color: #000;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+      z-index: 1001;
+    }
+
+    .explanation {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #ff4d6d;
+      text-align: center;
+      text-shadow: 0 0 5px #ff4d6d;
+    }
+
+    /* Benutzerdefiniertes Popup */
+    .custom-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #1a0628;
+      color: #ff4d6d;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
+      z-index: 1002;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .custom-popup.active {
+      display: flex;
+    }
+
+    .custom-popup button {
+      background-color: #ff4d6d;
+      color: #000;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .custom-popup button:hover {
+      background-color: #e74c3c;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 1001;
+      display: none;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Online Code Editor</h1>
+  </div>
+
+  <button class="menu-toggle" onclick="toggleToolbox()">.toolbox-Menü</button>
+
+  <div class="editor-container">
+    <!-- Einzelner Editor -->
+    <div class="editor-column">
+      <h3 style="color: #9b59b6;">Code eingeben (HTML, CSS, JavaScript)</h3>
+      <div class="editor-wrapper">
+        <div class="line-numbers" id="lineNumbers"></div>
+        <textarea id="codeEditor" placeholder="Schreibe hier deinen Code..." oninput="updateLineNumbers()" onscroll="syncScroll()"></textarea>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="output">
+      <iframe id="outputFrame"></iframe>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <button onclick="runCode()">Code ausführen</button>
+  <button onclick="openInNewTab()">In neuem Tab öffnen</button>
+  <button onclick="saveCode()">Code speichern</button>
+  <button onclick="loadCode()">Code laden</button>
+
+  <!-- Erklärung -->
+  <div class="explanation">
+    <p>
+      Diese Seite ermöglicht es dir, HTML, CSS und JavaScript in einem einzigen Feld zu schreiben und direkt im Browser auszuführen. Gib deinen Code ein und klicke auf "Code ausführen", um das Ergebnis im Ausgabebereich anzuzeigen.
+    </p>
+  </div>
+
+  <!-- Toolbox -->
+  <div class="toolbox" id="toolbox">
+    <h3>Toolbox</h3>
+    <label><input type="checkbox" id="autoCompleteToggle" checked> Auto-Vervollständigung</label>
+    <label><input type="checkbox" id="syntaxHighlightToggle" checked> Syntax-Highlighting</label>
+    <label><input type="checkbox" id="darkModeToggle" checked> Dunkler Modus</label>
+    <label><input type="checkbox" id="lineNumbersToggle" checked> Zeilennummern anzeigen</label>
+    <label><input type="checkbox" id="livePreviewToggle"> Live-Vorschau</label>
+    <label><input type="checkbox" id="wordWrapToggle"> Zeilenumbruch</label>
+    <label><input type="checkbox" id="highlightMatchingTagsToggle"> Passende Tags hervorheben</label>
+    <button onclick="formatCode()">Code formatieren</button>
+    <button onclick="clearCode()">Code löschen</button>
+    <button onclick="showHelp()">Hilfe anzeigen</button>
+    <button onclick="toggleFullScreen()">Vollbildmodus</button>
+    <button onclick="exportCode()">Code exportieren</button>
+    <button onclick="resetSettings()">Einstellungen zurücksetzen</button>
+  </div>
+
+  <!-- Benutzerdefiniertes Popup -->
+  <div class="overlay" id="overlay"></div>
+  <div class="custom-popup" id="customPopup">
+    <p id="popupMessage"></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify-html.min.js"></script>
+  <script>
+    // Toolbox öffnen/schließen
+    function toggleToolbox() {
+      const toolbox = document.getElementById('toolbox');
+      toolbox.classList.toggle('open');
+    }
+
+    // Funktion zum Aktualisieren der Zeilennummern
+    function updateLineNumbers() {
+      const code = document.getElementById('codeEditor').value;
+      const lines = code.split('\n').length;
+      const lineNumbers = document.getElementById('lineNumbers');
+      lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => `<span>${i + 1}</span>`).join('');
+    }
+
+    // Funktion zum Synchronisieren des Scrolls
+    function syncScroll() {
+      const editor = document.getElementById('codeEditor');
+      const lineNumbers = document.getElementById('lineNumbers');
+      lineNumbers.scrollTop = editor.scrollTop; // Scrollposition synchronisieren
+    }
+
+    // Funktion zum Anzeigen eines benutzerdefinierten Popups
+    function showPopup(message) {
+      const popup = document.getElementById('customPopup');
+      const overlay = document.getElementById('overlay');
+      const popupMessage = document.getElementById('popupMessage');
+
+      popupMessage.textContent = message;
+      popup.classList.add('active');
+      overlay.classList.add('active');
+    }
+
+    // Funktion zum Schließen des Popups
+    function closePopup() {
+      const popup = document.getElementById('customPopup');
+      const overlay = document.getElementById('overlay');
+
+      popup.classList.remove('active');
+      overlay.classList.remove('active');
+    }
+
+    // Funktion zum Ausführen des Codes
+    function runCode() {
+      const code = document.getElementById('codeEditor').value;
+
+      const outputFrame = document.getElementById('outputFrame');
+      try {
+        const iframeDoc = outputFrame.contentDocument || outputFrame.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(code);
+        iframeDoc.close();
+      } catch (error) {
+        showPopup(`Fehler: ${error.message}`);
+      }
+    }
+
+    // Funktion zum Öffnen der Vorschau in einem neuen Tab
+    function openInNewTab() {
+      const code = document.getElementById('codeEditor').value;
+      const newTab = window.open();
+      newTab.document.open();
+      newTab.document.write(code);
+      newTab.document.close();
+    }
+
+    // Funktion zum Speichern des Codes
+    function saveCode() {
+      const code = document.getElementById('codeEditor').value;
+      localStorage.setItem('savedCode', code);
+      showPopup('Code wurde gespeichert!');
+    }
+
+    // Funktion zum Laden des gespeicherten Codes
+    function loadCode() {
+      const savedCode = localStorage.getItem('savedCode');
+      if (savedCode) {
+        document.getElementById('codeEditor').value = savedCode;
+        updateLineNumbers(); // Zeilennummern aktualisieren
+        showPopup('Code wurde geladen!');
+      } else {
+        showPopup('Kein gespeicherter Code gefunden.');
+      }
+    }
+
+    // Auto-Vervollständigung
+    const autoCompleteEnabled = document.getElementById('autoCompleteToggle');
+    const editor = document.getElementById('codeEditor');
+    const htmlAttributes = [
+      'background-color', 'color', 'font-size', 'margin', 'padding', 'border', 'display', 'flex',
+      'justify-content', 'align-items', 'position', 'top', 'left', 'right', 'bottom', 'width', 'height'
+    ];
+
+    editor.addEventListener('input', () => {
+      updateLineNumbers(); // Zeilennummern beim Schreiben aktualisieren
+
+      if (!autoCompleteEnabled.checked) return;
+
+      const value = editor.value;
+      const cursorPosition = editor.selectionStart;
+
+      // Automatische Vervollständigung für Tags
+      const tagRegex = /<([a-zA-Z0-9]+)(\s[^>]*)?>$/;
+      const matchTag = value.slice(0, cursorPosition).match(tagRegex);
+
+      if (matchTag) {
+        const tag = matchTag[1];
+        const closingTag = `</${tag}>`;
+        editor.value = value.slice(0, cursorPosition) + closingTag + value.slice(cursorPosition);
+        editor.setSelectionRange(cursorPosition, cursorPosition); // Cursor bleibt vor dem schließenden Tag
+      }
+
+      // Automatische Vervollständigung für Attribute
+      const attributeRegex = /(\w+)\s*=\s*"?$/;
+      const matchAttribute = value.slice(0, cursorPosition).match(attributeRegex);
+
+      if (matchAttribute) {
+        const suggestions = htmlAttributes.filter(attr => attr.startsWith(matchAttribute[1]));
+        if (suggestions.length === 1) {
+          const suggestion = suggestions[0];
+          editor.value = value.slice(0, cursorPosition) + suggestion + '="' + value.slice(cursorPosition);
+          editor.setSelectionRange(cursorPosition + suggestion.length + 2, cursorPosition + suggestion.length + 2);
+        }
+      }
+    });
+
+    // Syntax-Highlighting aktivieren/deaktivieren
+    document.getElementById('syntaxHighlightToggle').addEventListener('change', function () {
+      if (this.checked) {
+        Prism.highlightAll();
+      } else {
+        editor.classList.remove('prism-code');
+      }
+    });
+
+    // Dunkler Modus aktivieren/deaktivieren
+    document.getElementById('darkModeToggle').addEventListener('change', function () {
+      document.body.style.backgroundColor = this.checked ? '#000' : '#fff';
+      document.body.style.color = this.checked ? '#fff' : '#000';
+    });
+
+    // Zeilennummern anzeigen/ausblenden
+    document.getElementById('lineNumbersToggle').addEventListener('change', function () {
+      const lineNumbers = document.getElementById('lineNumbers');
+      lineNumbers.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Live-Vorschau aktivieren/deaktivieren
+    const livePreviewEnabled = document.getElementById('livePreviewToggle');
+    livePreviewEnabled.addEventListener('change', function () {
+      if (this.checked) {
+        editor.addEventListener('input', runCode);
+      } else {
+        editor.removeEventListener('input', runCode);
+      }
+    });
+
+    // Zeilenumbruch aktivieren/deaktivieren
+    document.getElementById('wordWrapToggle').addEventListener('change', function () {
+      editor.style.whiteSpace = this.checked ? 'pre-wrap' : 'pre';
+    });
+
+    // Passende Tags hervorheben
+    document.getElementById('highlightMatchingTagsToggle').addEventListener('change', function () {
+      if (this.checked) {
+        editor.addEventListener('click', highlightMatchingTags);
+      } else {
+        editor.removeEventListener('click', highlightMatchingTags);
+        editor.style.backgroundColor = '#000'; // Hintergrund zurücksetzen
+      }
+    });
+
+    // Funktion zum Hervorheben passender Tags
+    function highlightMatchingTags() {
+      const code = editor.value;
+      const cursorPosition = editor.selectionStart;
+
+      // Regex für HTML-Tags
+      const tagRegex = /<\/?([a-zA-Z0-9]+)/g;
+      const tags = [];
+      let match;
+
+      while ((match = tagRegex.exec(code)) !== null) {
+        tags.push({ tag: match[1], index: match.index });
+      }
+
+      // Finde das aktuelle Tag
+      for (const tag of tags) {
+        if (cursorPosition >= tag.index && cursorPosition <= tag.index + tag.tag.length + 2) {
+          editor.style.backgroundColor = '#1a0628'; // Hintergrund ändern
+          showPopup(`Passendes Tag gefunden: <${tag.tag}>`);
+          break;
+        }
+      }
+    }
+
+    // Code formatieren mit js-beautify
+    function formatCode() {
+      const code = editor.value;
+      const formattedCode = html_beautify(code);
+      editor.value = formattedCode;
+      updateLineNumbers(); // Zeilennummern nach Formatierung aktualisieren
+    }
+
+    // Code löschen
+    function clearCode() {
+      if (confirmCustom('Möchtest du den Code wirklich löschen?')) {
+        editor.value = '';
+        updateLineNumbers(); // Zeilennummern zurücksetzen
+      }
+    }
+
+// Hilfe anzeigen
+    function showHelp() {
+      showPopup(
+        'Hilfe:\n' +
+        '- Auto-Vervollständigung: Schließende Tags und Attribute werden automatisch ergänzt.\n' +
+        '- Syntax-Highlighting: Aktiviere/Deaktiviere farbige Code-Darstellung.\n' +
+        '- Dunkler Modus: Ändert den Hintergrund zwischen Schwarz und Weiß.\n' +
+        '- Zeilennummern: Zeigt visuelle Zeilennummern an.\n' +
+        '- Live-Vorschau: Aktualisiert die Vorschau automatisch beim Schreiben.\n' +
+        '- Zeilenumbruch: Aktiviert/deaktiviert den Zeilenumbruch im Editor.\n' +
+        '- Passende Tags hervorheben: Markiert passende HTML-Tags beim Klicken.\n' +
+        '- Vollbildmodus: Maximiert den Editor und die Vorschau.\n' +
+        '- Code exportieren: Lädt den Code als HTML-Datei herunter.'
+      );
+    }
+
+    // Vollbildmodus aktivieren/deaktivieren
+    function toggleFullScreen() {
+      const editorContainer = document.querySelector('.editor-container');
+      if (!document.fullscreenElement) {
+        editorContainer.requestFullscreen().catch(err => {
+          showPopup(`Fehler beim Aktivieren des Vollbildmodus: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Code exportieren als HTML-Datei
+    function exportCode() {
+      const code = document.getElementById('codeEditor').value;
+      const blob = new Blob([code], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'code.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Einstellungen zurücksetzen
+    function resetSettings() {
+      document.getElementById('autoCompleteToggle').checked = true;
+      document.getElementById('syntaxHighlightToggle').checked = true;
+      document.getElementById('darkModeToggle').checked = true;
+      document.getElementById('lineNumbersToggle').checked = true;
+      document.getElementById('livePreviewToggle').checked = false;
+      document.getElementById('wordWrapToggle').checked = false;
+      document.getElementById('highlightMatchingTagsToggle').checked = false;
+
+      editor.style.whiteSpace = 'pre'; // Zeilenumbruch zurücksetzen
+      editor.style.backgroundColor = '#000'; // Hintergrund zurücksetzen
+      showPopup('Einstellungen wurden zurückgesetzt!');
+    }
+
+    // Initialisierung der Toolbox
+    document.addEventListener('DOMContentLoaded', () => {
+      Prism.highlightAll(); // Syntax-Highlighting initialisieren
+      updateLineNumbers(); // Zeilennummern initialisieren
+    });
+  </script>
+</body>
+</html>

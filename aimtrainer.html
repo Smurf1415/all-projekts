@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aim Trainer</title>
+    <style>
+        /* CSS für das Spiel */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1e1e1e;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 80vw;
+            height: 80vh;
+            background-color: #2a2a2a;
+            border: 4px solid #ff4500;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+            overflow: hidden;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            z-index: 10;
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            z-index: 10;
+        }
+
+        #stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        #leaderboard {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            z-index: 10;
+            text-align: right;
+        }
+
+        #target {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #ff4500;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+            transition: transform 0.2s ease;
+        }
+
+        #target:hover {
+            transform: scale(1.1);
+        }
+
+        button {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+        }
+
+        button:hover {
+            background-color: #e53e00;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML-Struktur -->
+    <div id="game-container">
+        <div id="score">Punkte: 0</div>
+        <div id="timer">Zeit übrig: 30s</div>
+        <div id="stats">Stats: --</div>
+        <div id="leaderboard">Leaderboard: --</div>
+        <div id="target"></div>
+    </div>
+    <button id="clear-leaderboard">Leaderboard löschen</button>
+
+    <script>
+        // JavaScript für das Spiel
+        const gameContainer = document.getElementById('game-container');
+        const target = document.getElementById('target');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const statsDisplay = document.getElementById('stats');
+        const leaderboardDisplay = document.getElementById('leaderboard');
+        const clearButton = document.getElementById('clear-leaderboard');
+
+        let score = 0;
+        let timeLeft = 30; // 30 Sekunden Zeit
+        let totalClicks = 0; // Gesamtanzahl der Klicks (Treffer + Fehlklicks)
+        let hits = 0; // Anzahl der Treffer
+        let startTime = Date.now(); // Startzeit des Spiels
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || []; // Leaderboard aus localStorage
+        let isAimbotActive = false; // Zustand des Aimbots
+
+        // Funktion zur zufälligen Positionierung des Ziels
+        function moveTarget() {
+            const containerWidth = gameContainer.offsetWidth;
+            const containerHeight = gameContainer.offsetHeight;
+            const targetSize = target.offsetWidth;
+
+            // Zufällige Position innerhalb des Containers berechnen
+            const randomX = Math.random() * (containerWidth - targetSize);
+            const randomY = Math.random() * (containerHeight - targetSize);
+
+            // Ziel an die neue Position setzen
+            target.style.left = `${randomX}px`;
+            target.style.top = `${randomY}px`;
+
+            // Wenn der Aimbot aktiviert ist, bewege die Maus automatisch zum Ziel
+            if (isAimbotActive) {
+                moveMouseToTarget(randomX, randomY);
+            }
+        }
+
+        // Funktion zum Bewegen der Maus zum Ziel
+        function moveMouseToTarget(x, y) {
+            const rect = gameContainer.getBoundingClientRect();
+            const centerX = x + rect.left + target.offsetWidth / 2;
+            const centerY = y + rect.top + target.offsetHeight / 2;
+
+            // Simuliere eine Mausbewegung mit einer Animation
+            const interval = setInterval(() => {
+                const currentMouseX = window.event.clientX || 0;
+                const currentMouseY = window.event.clientY || 0;
+
+                const dx = (centerX - currentMouseX) / 10;
+                const dy = (centerY - currentMouseY) / 10;
+
+                window.scrollTo(window.scrollX + dx, window.scrollY + dy);
+
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+                    clearInterval(interval);
+                }
+            }, 16); // ~60 FPS
+        }
+
+        // Funktion zum Erhöhen oder Verringern des Punktestands
+        function handleScore(isHit) {
+            totalClicks++;
+            if (isHit) {
+                score += 10; // Punkte für einen Treffer
+                hits++;
+            } else {
+                score -= 5; // Punkteabzug für einen Fehlklick
+                if (score < 0) score = 0; // Verhindert negative Punktzahlen
+            }
+            scoreDisplay.textContent = `Punkte: ${score}`;
+        }
+
+        // Event-Listener für Klicks auf das Ziel
+        target.addEventListener('click', () => {
+            handleScore(true); // Treffer
+            moveTarget(); // Ziel nach jedem Klick neu positionieren
+        });
+
+        // Event-Listener für Klicks außerhalb des Ziels
+        gameContainer.addEventListener('click', (event) => {
+            if (!event.target.closest('#target')) {
+                handleScore(false); // Fehlklick
+            }
+        });
+
+        // Timer-Funktion
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.textContent = `Zeit übrig: ${timeLeft}s`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                endGame();
+            }
+        }
+
+        // Funktion zum Beenden des Spiels
+        function endGame() {
+            const endTime = Date.now();
+            const totalTimeInSeconds = (endTime - startTime) / 1000;
+            const clicksPerMinute = Math.round((totalClicks / totalTimeInSeconds) * 60);
+            const accuracy = ((hits / totalClicks) * 100).toFixed(2) || 0;
+
+            alert(`Spiel beendet! Deine Punkte: ${score}`);
+            statsDisplay.textContent = `Stats: Trefferquote: ${accuracy}%, Klicks pro Minute: ${clicksPerMinute}`;
+
+            // Ergebnis zum Leaderboard hinzufügen
+            leaderboard.push({ score, accuracy, clicksPerMinute });
+            leaderboard.sort((a, b) => b.score - a.score); // Sortieren nach Punkten
+            updateLeaderboard();
+
+            // Ziel ausblenden
+            target.style.display = 'none';
+        }
+
+        // Funktion zum Aktualisieren des Leaderboards
+        function updateLeaderboard() {
+            leaderboardDisplay.innerHTML = 'Leaderboard:<br>' + leaderboard
+                .map(
+                    (entry, index) =>
+                        `${index + 1}. Punkte: ${entry.score}, Trefferquote: ${entry.accuracy}%, Klicks pro Minute: ${entry.clicksPerMinute}`
+                )
+                .join('<br>');
+
+            // Leaderboard im localStorage speichern
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+        }
+
+        // Funktion zum Löschen des Leaderboards
+        function clearLeaderboard() {
+            leaderboard = [];
+            localStorage.removeItem('leaderboard');
+            leaderboardDisplay.textContent = 'Leaderboard: --';
+        }
+
+        // Timer starten
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // Spiel starten: Ziel initial positionieren
+        moveTarget();
+
+        // Button zum Löschen des Leaderboards
+        clearButton.addEventListener('click', clearLeaderboard);
+
+        // Aimbot-Tastenkombination (Shift + B)
+        document.addEventListener('keydown', (event) => {
+            if (event.shiftKey && event.key.toLowerCase() === 'b') {
+                isAimbotActive = true;
+                alert('Aimbot aktiviert!');
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key.toLowerCase() === 'b') {
+                isAimbotActive = false;
+                alert('Aimbot deaktiviert!');
+            }
+        });
+    </script>
+</body>
+</html>
